@@ -1,0 +1,44 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ▼▼▼ Cambiá este email por el tuyo (el de Google con el que entrás al área docente).
+    function esDocente() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email in ['TU_EMAIL@gmail.com'];
+    }
+
+    // Sesión de asistencia: contiene el código vigente. Solo el docente la ve.
+    match /sesiones/{sid} {
+      allow read, write: if esDocente();
+    }
+
+    // Datos públicos de la clase en curso (título y si está abierta). Sin códigos.
+    match /publico/{docId} {
+      allow read: if true;
+      allow write: if esDocente();
+    }
+
+    // Registros de asistencia.
+    match /asistencias/{aid} {
+      function sesion() {
+        return get(/databases/$(database)/documents/sesiones/$(request.resource.data.sesion)).data;
+      }
+      // Un estudiante puede CREAR su registro (no leer, modificar ni borrar)
+      // solo si la asistencia está abierta y el código es el vigente o el anterior.
+      // El id es sesion_legajo, así que el mismo legajo no puede registrarse dos veces.
+      allow create: if
+        request.resource.data.keys().hasOnly(['sesion','nombre','legajo','codigo','hora'])
+        && request.resource.data.nombre is string
+        && request.resource.data.nombre.size() >= 3 && request.resource.data.nombre.size() <= 80
+        && request.resource.data.legajo is string
+        && request.resource.data.legajo.size() >= 1 && request.resource.data.legajo.size() <= 20
+        && request.resource.data.hora == request.time
+        && aid == request.resource.data.sesion + '_' + request.resource.data.legajo
+        && sesion().activa == true
+        && request.resource.data.codigo in [sesion().codigo, sesion().codigoAnterior];
+      allow read, update, delete: if esDocente();
+    }
+  }
+}

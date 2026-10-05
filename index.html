@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Administración General</title>
+<link rel="stylesheet" href="estilos.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
+</head>
+<body>
+<div class="wrap">
+  <header><h1 data-curso>Administración General</h1><p data-subtitulo></p></header>
+  <div class="panel">
+    <h2>Asistencia</h2>
+    <p class="muted" style="margin-top:0">Si estás en clase, escaneá el QR de la pantalla o entrá acá y escribí el código.</p>
+    <a class="btn primary" href="asistencia.html">Registrar mi asistencia</a>
+  </div>
+  <div class="panel">
+    <h2>Próximamente</h2>
+    <p class="muted" style="margin:0">Materiales de cada clase, encuestas en vivo, mural y ruleta de nombres.</p>
+  </div>
+  <p class="small" style="margin-top:28px"><a href="docente.html" class="muted">Área docente</a></p>
+</div>
+<script type="module">
+  import { encabezado } from "./firebase.js";
+  encabezado();
+</script>
+</body>
+</html>

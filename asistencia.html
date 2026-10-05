@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Registrar asistencia</title>
+<link rel="stylesheet" href="estilos.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✅</text></svg>">
+</head>
+<body>
+<div class="wrap">
+  <header><a href="./"><h1 data-curso>Administración General</h1></a><p>Registro de asistencia</p></header>
+  <div id="app"><p class="muted">Cargando…</p></div>
+</div>
+<script type="module">
+import { db, configurado, encabezado, esc, avisoSinConfig } from "./firebase.js";
+import { doc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+encabezado();
+const app = document.getElementById("app");
+const params = new URLSearchParams(location.search);
+const limpiarLegajo = s => s.toUpperCase().replace(/[^A-Z0-9-]/g, "").slice(0, 20);
+
+async function iniciar(){
+  if(!configurado) return avisoSinConfig(app);
+  let info;
+  try{
+    const snap = await getDoc(doc(db, "publico", "actual"));
+    info = snap.exists() ? snap.data() : null;
+  }catch(e){ console.error(e); }
+
+  if(!info || !info.activa){
+    app.innerHTML = `<div class="panel"><h2>La asistencia no está abierta</h2>
+      <p class="muted" style="margin:0">Cuando el docente la abra en clase, escaneá el QR o volvé a esta página.</p>
+      <button class="btn block" onclick="location.reload()">Volver a intentar</button></div>`;
+    return;
+  }
+  const sid = info.sesion;
+  const ya = localStorage.getItem("asistencia_" + sid);
+  if(ya){ return exito(info, JSON.parse(ya)); }
+
+  const codigoQR = (params.get("c") || "").replace(/\D/g, "");
+  const guardado = JSON.parse(localStorage.getItem("mis_datos") || "{}");
+  app.innerHTML = `<div class="panel">
+    <div class="livetag">Asistencia abierta</div>
+    <h2 style="margin-top:6px">${esc(info.titulo)}</h2>
+    <form id="f" novalidate>
+      <label for="nombre">Nombre y apellido</label>
+      <input id="nombre" autocomplete="name" value="${esc(guardado.nombre || "")}" required>
+      <label for="legajo">Legajo</label>
+      <input id="legajo" inputmode="numeric" autocomplete="off" value="${esc(guardado.legajo || "")}" required>
+      <div class="${codigoQR ? "hide" : ""}">
+        <label for="codigo">Código de la pantalla</label>
+        <input id="codigo" inputmode="numeric" maxlength="4" autocomplete="off" value="${esc(codigoQR)}"
+          style="font-size:26px;letter-spacing:.3em;max-width:200px">
+      </div>
+      <button class="btn primary block" id="enviar">Registrar asistencia</button>
+      <p class="error" id="err" role="alert"></p>
+    </form></div>`;
+
+  document.getElementById("f").onsubmit = async ev => {
+    ev.preventDefault();
+    const err = document.getElementById("err");
+    const nombre = document.getElementById("nombre").value.trim().replace(/\s+/g, " ");
+    const legajo = limpiarLegajo(document.getElementById("legajo").value);
+    const codigo = document.getElementById("codigo").value.trim();
+    if(nombre.length < 3){ err.textContent = "Escribí tu nombre y apellido."; return; }
+    if(!legajo){ err.textContent = "Escribí tu número de legajo."; return; }
+    if(!/^\d{4}$/.test(codigo)){ err.textContent = "Escribí el código de 4 números que aparece en la pantalla."; return; }
+    const btn = document.getElementById("enviar"); btn.disabled = true; err.textContent = "";
+    try{
+      await setDoc(doc(db, "asistencias", sid + "_" + legajo), { sesion: sid, nombre, legajo, codigo, hora: serverTimestamp() });
+      const reg = { nombre, legajo, hora: new Date().toLocaleTimeString("es-AR", {hour:"2-digit", minute:"2-digit"}) };
+      localStorage.setItem("mis_datos", JSON.stringify({ nombre, legajo }));
+      localStorage.setItem("asistencia_" + sid, JSON.stringify(reg));
+      exito(info, reg);
+    }catch(e){
+      console.error(e);
+      btn.disabled = false;
+      if(e.code === "permission-denied"){
+        document.querySelector("#codigo").closest("div").classList.remove("hide");
+        document.getElementById("codigo").value = "";
+        err.textContent = "El código venció o este legajo ya se registró hoy. Escribí el código que se ve ahora en la pantalla.";
+      } else {
+        err.textContent = "No se pudo conectar. Revisá tu conexión e intentá de nuevo.";
+      }
+    }
+  };
+}
+
+function exito(info, reg){
+  app.innerHTML = `<div class="panel">
+    <h2>Asistencia registrada</h2>
+    <p class="ok" style="margin:0">${esc(reg.nombre)} · Legajo ${esc(reg.legajo)}</p>
+    <p class="muted">${esc(info.titulo)} · ${esc(reg.hora)} h</p>
+    <p class="small muted" style="margin-bottom:0">Ya podés cerrar esta página.</p></div>`;
+}
+iniciar();
+</script>
+</body>
+</html>
