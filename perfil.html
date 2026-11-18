@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Perfil · Administración General</title>
+<link rel="icon" href="img/uba.png">
+<link rel="stylesheet" href="sitio.css">
+<style>
+.top2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:24px;align-items:stretch}
+@media (max-width:900px){.top2{grid-template-columns:1fr}}
+.stats{display:flex;flex-wrap:wrap;gap:22px;margin-bottom:16px}
+.stats b{font-family:var(--serif);font-size:34px;line-height:1;display:block}
+.stats span{color:var(--muted);font-size:15px}
+.dots{display:grid;grid-template-columns:repeat(13,1fr);gap:6px;margin:8px 0 6px}
+.dots span{aspect-ratio:1;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;background:var(--gray-bg);color:#8A8DA0}
+.dots span.p{background:var(--ok);color:#fff}
+.dots span.a{background:var(--bad);color:#fff}
+.notas{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.notas div{flex:1 1 150px;background:var(--soft);border-radius:10px;padding:10px 14px;display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.notas b{font-family:var(--serif);font-size:22px}
+.bh{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.bh h2{margin:0}
+.bh .r{display:flex;gap:8px;align-items:center}
+.st{display:inline-flex;align-items:center;gap:6px;font-size:15px;font-weight:700;min-height:36px;padding:6px 14px;border-radius:20px;border:1px solid var(--field)}
+.st.ok{background:var(--ok);border-color:var(--ok);color:#fff}
+.chev{background:none;border:0;cursor:pointer;padding:6px;color:var(--muted)}
+.chev svg{transition:transform .2s}
+.chev[aria-expanded="true"] svg{transform:rotate(180deg)}
+.bb{margin-top:16px}
+.fg{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:14px 18px}
+.vw{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,220px),1fr));gap:12px 18px}
+.vw span{display:block;font-size:14px;color:var(--muted)}
+.vw b{font-weight:400}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.chip{font:inherit;font-size:15px;min-height:40px;padding:8px 14px;border-radius:9px;cursor:pointer;background:#fff;color:var(--ink);border:1px solid var(--field)}
+.chip[aria-pressed="true"]{background:var(--ink);color:#fff;border-color:var(--ink);font-weight:700}
+.lk{display:flex;justify-content:space-between;gap:16px;align-items:center;padding:10px 0;border-top:1px solid var(--line2);flex-wrap:wrap}
+.lk:first-child{border-top:0}
+.lk span{flex:1 1 300px}
+.lk .n{display:flex;gap:6px}
+.lk .n button{width:44px;height:44px;font:inherit;font-weight:700;border-radius:10px;cursor:pointer;background:#fff;color:var(--ink);border:1px solid var(--field)}
+.lk .n button[aria-pressed="true"]{background:var(--live);color:#fff;border-color:var(--live)}
+.foto{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.foto img,.foto .ini{width:84px;height:84px;border-radius:50%;object-fit:cover;background:var(--live);color:#fff;font-size:28px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.foto label{cursor:pointer}
+.foot{display:flex;justify-content:flex-end;margin-top:16px}
+</style>
+</head>
+<body>
+<script type="module">
+import { iniciar, db, F, esc, toast, $, leerClases, leerMiDoc, leerTomadas, misPresentes, salir } from "./app.js";
+
+const CARRERAS = ["Contador Público", "Lic. en Administración", "Lic. en Economía", "Lic. en Sistemas de Información", "Actuario"];
+const ANTIG = ["Menos de 6 meses", "6 meses a 1 año", "1 a 3 años", "Más de 3 años"];
+const FRASES = ["Aspiro a tener un rol de alta jerarquía en una organización.", "Lo que más me interesa es ganar dinero.", "Los profesionales de las Ciencias Económicas debemos garantizar que las organizaciones tengan un impacto social positivo.", "Los profesionales de las Ciencias Económicas tenemos responsabilidad por el impacto ambiental de las organizaciones.", "Considero que tengo excelentes habilidades de liderazgo.", "Me gusta socializar y vincularme con otras personas.", "Me siento cómodo/a si tengo que hablar en público (por ejemplo, pasar al frente en el aula)."];
+const LK = ["Nada de acuerdo", "Poco de acuerdo", "Ni de acuerdo ni en desacuerdo", "Bastante de acuerdo", "Totalmente de acuerdo"];
+const CHEV = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+
+iniciar({ area: "estudiantes", activo: "Perfil", titulo: "Perfil", fondo: "rosa" }, async (user, main) => {
+  const [clases, mio, tomadas, pres] = await Promise.all([leerClases(), leerMiDoc(user.uid), leerTomadas(), misPresentes(user.uid)]);
+  let notas = {}; try{ const n = await F.getDoc(F.doc(db, "notas", user.uid)); if(n.exists()) notas = n.data(); }catch(e){}
+  const P = { ...(mio.perfil || {}) };
+  P.bloques = { ...(P.bloques || {}) }; P.likert = { ...(P.likert || {}) };
+  const vistos = Object.values(mio.vistos || {}).filter(Boolean).length;
+  const editando = {}, abierto = {};
+
+  // ----- recorrido -----
+  const tom = clases.filter(c => tomadas[c.id]), np = tom.filter(c => pres[c.id]).length;
+  const pct = tom.length ? Math.round(np / tom.length * 100) : null;
+  const nota = v => v === undefined || v === null || v === "" ? '<span class="pill na">Aún no disponible</span>' : `<b>${esc(v)}</b>`;
+  const recorrido = `<section class="card"><h2>Mi recorrido</h2>
+    <div class="stats"><div><b>${pct === null ? "—" : pct + " %"}</b><span>Asistencia${tom.length ? ` (${np} de ${tom.length})` : ""}</span></div><div><b>${vistos}</b><span>Contenidos vistos</span></div></div>
+    <div class="dots">${clases.map(c => `<span class="${tomadas[c.id] ? (pres[c.id] ? "p" : "a") : ""}" title="Clase ${c.n}">${c.n}</span>`).join("")}</div>
+    <div class="notas"><div><span>Nota 1.° parcial</span>${nota(notas.parcial1)}</div><div><span>Nota 2.° parcial</span>${nota(notas.parcial2)}</div></div></section>`;
+
+  // ----- bloques -----
+  const inp = (id, label, v, t = "text") => `<div><label class="l" for="${id}">${label}</label><input type="${t}" id="${id}" value="${esc(v || "")}"></div>`;
+  const area = (id, label, v) => `<div style="grid-column:1/-1"><label class="l" for="${id}">${label}</label><textarea id="${id}" rows="2">${esc(v || "")}</textarea></div>`;
+  const chips = (key, opts, label) => `<div style="grid-column:1/-1"><span class="l">${label}</span><div class="chips" data-chips="${key}">${opts.map(o => `<button type="button" class="chip" aria-pressed="${P[key] === o}" data-v="${esc(o)}">${esc(o)}</button>`).join("")}</div></div>`;
+  const ver = pares => `<div class="vw">${pares.map(([l, v]) => `<div><span>${l}</span><b>${esc(v || "—")}</b></div>`).join("")}</div>`;
+  const fecha = s => s ? s.split("-").reverse().join("/") : "";
+  const avatar = () => P.foto ? `<img src="${P.foto}" alt="">` : user.photoURL ? `<img src="${esc(user.photoURL)}" alt="" referrerpolicy="no-referrer">` : `<span class="ini">${esc(((P.nombre || user.displayName || "?")[0] || "?").toUpperCase())}</span>`;
+
+  const B = {
+    b1: { t: "Datos personales", fijo: true,
+      ver: () => `<div class="foto">${avatar()}</div>` + ver([["Apellido", P.apellido], ["Nombre", P.nombre], ["Cómo me llaman", P.apodo], ["Legajo", P.legajo], ["Fecha de nacimiento", fecha(P.nacimiento)], ["Lugar de nacimiento", P.lugar]]),
+      form: () => `<div class="foto">${avatar()}<label class="btn small" for="foto">Cambiar foto</label><input id="foto" type="file" accept="image/*" hidden></div>
+        <div class="fg">${inp("apellido", "Apellido *", P.apellido)}${inp("nombre", "Nombre *", P.nombre)}${inp("apodo", "¿Cómo preferís que te llamemos?", P.apodo)}${inp("legajo", "Legajo *", P.legajo)}${inp("nacimiento", "Fecha de nacimiento", P.nacimiento, "date")}${inp("lugar", "¿Dónde naciste?", P.lugar)}</div>`,
+      leer: () => ({ apellido: $("#apellido").value.trim(), nombre: $("#nombre").value.trim(), apodo: $("#apodo").value.trim(), legajo: $("#legajo").value.trim().replace(/[^0-9A-Za-z-]/g, ""), nacimiento: $("#nacimiento").value, lugar: $("#lugar").value.trim() }),
+      ok: d => d.apellido && d.nombre && d.legajo ? "" : "Completá apellido, nombre y legajo." },
+    b2: { t: "Perfil académico",
+      ver: () => ver([["Carrera", P.carrera], ["Materias aprobadas", P.aprobadas], ["Otras materias este cuatrimestre", P.otras], ["Por qué estudio esta carrera", P.porque]]),
+      form: () => `<div class="fg">${chips("carrera", CARRERAS, "¿Qué carrera estudiás? *")}${area("porque", "¿Por qué estudiás esta carrera?", P.porque)}${inp("aprobadas", "¿Cuántas materias tenés aprobadas?", P.aprobadas, "number")}${inp("otras", "¿Qué otras materias cursás este cuatrimestre?", P.otras)}</div>`,
+      leer: () => ({ carrera: P.carrera || "", porque: $("#porque").value.trim(), aprobadas: $("#aprobadas").value, otras: $("#otras").value.trim() }),
+      ok: d => d.carrera ? "" : "Elegí tu carrera." },
+    b3: { t: "Perfil laboral",
+      ver: () => ver(P.trabaja === "Sí" ? [["¿Trabajás?", "Sí"], ["Organización", P.org], ["Cargo", P.cargo], ["Antigüedad", P.antig]] : [["¿Trabajás?", P.trabaja]]),
+      form: () => `<div class="fg">${chips("trabaja", ["Sí", "No"], "¿Trabajás? *")}<div id="siTrab" style="display:contents">${P.trabaja === "Sí" ? `${inp("org", "¿En qué organización?", P.org)}${inp("cargo", "¿Cuál es tu cargo?", P.cargo)}${chips("antig", ANTIG, "¿Hace cuánto tiempo?")}` : ""}</div></div>`,
+      leer: () => P.trabaja === "Sí" ? { trabaja: "Sí", org: $("#org").value.trim(), cargo: $("#cargo").value.trim(), antig: P.antig || "" } : { trabaja: P.trabaja || "", org: "", cargo: "", antig: "" },
+      ok: d => d.trabaja ? "" : "Contanos si trabajás." },
+    b4: { t: "¿Qué tan de acuerdo estás?",
+      ver: () => `<div>${FRASES.map((f, i) => `<div class="lk"><span>${esc(f)}</span><b>${P.likert[i] ? P.likert[i] + " · " + LK[P.likert[i] - 1] : "—"}</b></div>`).join("")}</div>`,
+      form: () => `<div>${FRASES.map((f, i) => `<div class="lk"><span>${esc(f)}</span><div class="n" role="group" aria-label="${esc(f)}">${[1, 2, 3, 4, 5].map(n => `<button type="button" data-lk="${i}" data-n="${n}" aria-pressed="${P.likert[i] === n}" aria-label="${n}: ${LK[n - 1]}" title="${LK[n - 1]}">${n}</button>`).join("")}</div></div>`).join("")}</div>`,
+      leer: () => ({ likert: { ...P.likert } }),
+      ok: d => Object.keys(d.likert).length === FRASES.length ? "" : "Respondé todas las frases." },
+    b5: { t: "Para conocerte mejor",
+      ver: () => ver([["Máxima aspiración como profesional", P.aspiracion], ["Película o serie favorita", P.pelicula], ["Hobby o actividad predilecta", P.hobby], ["Artista o banda", P.musica], ["Equipo de fútbol", P.futbol]]),
+      form: () => `<div class="fg">${area("aspiracion", "¿Cuál es tu máxima aspiración como profesional?", P.aspiracion)}${inp("pelicula", "¿Tu película o serie favorita?", P.pelicula)}${inp("hobby", "¿Tenés algún hobby o actividad predilecta?", P.hobby)}${inp("musica", "¿Algún artista o banda que te guste mucho?", P.musica)}${inp("futbol", "¿De qué equipo de fútbol sos hincha?", P.futbol)}</div>`,
+      leer: () => ({ aspiracion: $("#aspiracion").value.trim(), pelicula: $("#pelicula").value.trim(), hobby: $("#hobby").value.trim(), musica: $("#musica").value.trim(), futbol: $("#futbol").value.trim() }),
+      ok: () => "" }
+  };
+
+  function bloque(k){
+    const b = B[k], hecho = !!P.bloques[k], ed = !hecho || editando[k], op = b.fijo || abierto[k];
+    return `<section class="card" id="${k}"><div class="bh"><h2>${b.t}</h2><div class="r">
+      ${hecho && !ed && op ? `<button class="btn small" type="button" data-ed="${k}">Editar</button>` : ""}
+      <span class="st${hecho ? " ok" : ""}">${hecho ? "Hecho" : "Pendiente"}</span>
+      ${hecho && !ed && !b.fijo ? `<button class="chev" type="button" data-tg="${k}" aria-expanded="${!!op}" aria-label="${op ? "Ocultar" : "Mostrar"}">${CHEV}</button>` : ""}</div></div>
+      ${ed ? `<div class="bb">${b.form()}<p class="err" style="color:var(--bad);margin:10px 0 0" role="alert"></p><div class="foot"><button class="btn primary" type="button" data-sv="${k}">Guardar</button></div></div>` : op ? `<div class="bb">${b.ver()}</div>` : ""}</section>`;
+  }
+  function draw(){
+    main.innerHTML = `<div class="top2">${recorrido}${bloque("b1")}</div>${["b2", "b3", "b4", "b5"].map(bloque).join("")}
+      <div class="row" style="justify-content:flex-end"><button class="btn link" id="out" type="button">Salir de la cuenta</button></div>`;
+    $("#out").onclick = salir;
+    main.querySelectorAll("[data-ed]").forEach(b => b.onclick = () => { editando[b.dataset.ed] = true; draw(); });
+    main.querySelectorAll("[data-tg]").forEach(b => b.onclick = () => { abierto[b.dataset.tg] = !abierto[b.dataset.tg]; draw(); });
+    main.querySelectorAll("[data-chips]").forEach(g => g.querySelectorAll(".chip").forEach(c => c.onclick = () => {
+      const key = g.dataset.chips; P[key] = c.dataset.v;
+      g.querySelectorAll(".chip").forEach(x => x.setAttribute("aria-pressed", x === c));
+      if(key === "trabaja"){
+        const s = $("#siTrab");
+        s.innerHTML = P.trabaja === "Sí" ? `${inp("org", "¿En qué organización?", P.org)}${inp("cargo", "¿Cuál es tu cargo?", P.cargo)}${chips("antig", ANTIG, "¿Hace cuánto tiempo?")}` : "";
+        s.querySelectorAll(".chip").forEach(x => x.onclick = () => { P.antig = x.dataset.v; s.querySelectorAll(".chip").forEach(y => y.setAttribute("aria-pressed", y === x)); });
+      }
+    }));
+    main.querySelectorAll("[data-lk]").forEach(b => b.onclick = () => {
+      P.likert[b.dataset.lk] = +b.dataset.n;
+      b.parentElement.querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", x === b));
+    });
+    const f = $("#foto"); if(f) f.onchange = async () => {
+      const file = f.files[0]; if(!file) return;
+      try{ P.foto = await achicar(file); const box = f.closest(".foto"); box.querySelector("img,.ini").outerHTML = `<img src="${P.foto}" alt="">`; P._fotoNueva = true; }
+      catch(e){ toast("No se pudo usar esa imagen."); }
+    };
+    main.querySelectorAll("[data-sv]").forEach(b => b.onclick = () => guardar(b.dataset.sv, b));
+  }
+  async function guardar(k, btn){
+    const sec = $("#" + k), d = B[k].leer(), err = B[k].ok(d);
+    if(err){ sec.querySelector(".err").textContent = err; return; }
+    if(k === "b1" && P._fotoNueva) d.foto = P.foto;
+    btn.disabled = true;
+    try{
+      await F.setDoc(F.doc(db, "estudiantes", user.uid), { perfil: { ...d, bloques: { [k]: true } } }, { merge: true });
+      Object.assign(P, d); P.bloques[k] = true; delete P._fotoNueva; editando[k] = false; abierto[k] = false;
+      toast("Guardado"); draw();
+    }catch(e){ console.error(e); toast("No se pudo guardar."); btn.disabled = false; }
+  }
+  // Achica la foto a 240 px para guardarla en la ficha.
+  function achicar(file){
+    return new Promise((ok, no) => {
+      const img = new Image(); img.onload = () => {
+        const s = 240, c = document.createElement("canvas"); c.width = c.height = s;
+        const m = Math.min(img.width, img.height), x = (img.width - m) / 2, y = (img.height - m) / 2;
+        c.getContext("2d").drawImage(img, x, y, m, m, 0, 0, s, s); ok(c.toDataURL("image/jpeg", .8)); URL.revokeObjectURL(img.src);
+      }; img.onerror = no; img.src = URL.createObjectURL(file);
+    });
+  }
+  draw();
+});
+</script>
+</body>
+</html>

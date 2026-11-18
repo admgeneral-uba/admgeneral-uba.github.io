@@ -8,29 +8,87 @@
 <link rel="icon" href="img/uba.png">
 <link rel="stylesheet" href="sitio.css">
 <style>
-a.sec{display:flex;flex-direction:column;gap:4px;text-decoration:none;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:20px 22px}
-a.sec:hover{border-color:var(--ink)}
-a.sec h2{margin:0;font-size:22px}
-.next h3{margin:4px 0 8px;font-size:24px}
-.next ul{margin:0;padding-left:20px}
+.next h3{margin:4px 0 6px;font-size:26px;line-height:1.2}
+.next ul{margin:8px 0 0;padding-left:20px}
+.nums{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,180px),1fr));gap:14px}
+.nums div{background:var(--soft);border-radius:12px;padding:14px 16px}
+.nums b{font-family:var(--serif);font-size:34px;line-height:1;display:block;margin-bottom:4px}
+.av{display:grid;grid-template-columns:minmax(0,1fr) 220px auto;gap:16px;align-items:center;padding:12px 0;border-top:1px solid var(--line2)}
+.av:first-of-type{border-top:0}
+.av .bar{display:flex;align-items:center;gap:10px;font-size:15px;color:var(--muted)}
+.av .bar div{flex:1;height:8px;background:var(--line);border-radius:4px;overflow:hidden}
+.av .bar i{display:block;height:100%;background:var(--ok)}
+.av .acts{display:flex;gap:4px}
+.edit{display:grid;gap:10px;padding:12px 0;border-top:1px solid var(--line2)}
+@media (max-width:760px){.av{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <script type="module">
-import { iniciar, leerClases, larga, hoyISO, esc, CURSO_INFO } from "./app.js";
-iniciar({ area: "docente", activo: "", titulo: CURSO_INFO.nombre, subtitulo: CURSO_INFO.subtitulo, fondo: "intenso", grande: true }, async (user, main) => {
-  const clases = await leerClases();
+import { iniciar, db, F, esc, toast, $, leerClases, leerTomadas, larga, hoyISO, esUrl, CURSO_INFO } from "./app.js";
+
+iniciar({ area: "docente", activo: "", titulo: "Hola, Nicolás", fondo: "intenso", grande: true }, async (user, main) => {
+  const nom = (user.displayName || "").split(" ")[0]; if(nom) document.querySelector(".hero h1").textContent = "Hola, " + nom;
+  const [clases, tomadas, est, as, avs] = await Promise.all([leerClases(), leerTomadas(), F.getDocs(F.collection(db, "estudiantes")), F.getDocs(F.collection(db, "asistencias")), F.getDocs(F.collection(db, "avisos"))]);
   const hoy = hoyISO(), prox = clases.find(c => c.fecha >= hoy);
-  main.innerHTML = `
+  const tom = clases.filter(c => tomadas[c.id]);
+  const pres = {}; as.docs.forEach(d => { const r = d.data(); if(r.uid) pres[r.uid] = (pres[r.uid] || 0) + 1; });
+  const N = est.size;
+  const pcts = est.docs.map(d => tom.length ? (pres[d.id] || 0) / tom.length * 100 : null).filter(x => x !== null);
+  const prom = pcts.length ? Math.round(pcts.reduce((a, b) => a + b, 0) / pcts.length) : null;
+  const bajo = pcts.filter(x => x < 75).length;
+  let avisos = avs.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.orden || 0) - (b.orden || 0));
+  const hechos = id => est.docs.filter(d => (d.data().hechos || {})[id]).length;
+  let editando = null;
+
+  function draw(){
+    main.innerHTML = `
     ${prox ? `<div class="card next"><span class="kick">${prox.fecha === hoy ? "Hoy" : "Próxima clase"}</span>
-      <h3>Clase ${prox.n}: ${esc(prox.titulo)}</h3><p class="muted" style="margin:0 0 8px">${esc(larga(prox.fecha))} · ${esc(prox.modalidad)}${prox.unidad ? " · Unidad " + prox.unidad : ""}</p>
-      ${prox.temas ? `<ul>${prox.temas.split("\n").filter(Boolean).map(t => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}</div>` : ""}
-    <div class="grid">
-      <a class="sec" href="docente-asistencia.html"><h2>Asistencia</h2><span class="muted">Abrir el código QR</span></a>
-      <a class="sec" href="docente-cronograma.html"><h2>Cronograma</h2><span class="muted">Fechas, títulos y temas</span></a>
-      <a class="sec" href="docente-contenidos.html"><h2>Contenidos</h2><span class="muted">Lecturas, presentaciones y recomendaciones</span></a>
-      <a class="sec" href="recursos.html"><h2>Recursos</h2><span class="muted">Dinámicas para la clase</span></a>
-    </div>`;
+      <h3>Clase ${prox.n}: ${esc(prox.titulo)}</h3><div class="muted">${esc(larga(prox.fecha))} · ${esc(prox.modalidad)}${prox.unidad ? " · Unidad " + prox.unidad : ""}</div>
+      ${prox.temas ? `<ul>${prox.temas.split("\n").filter(Boolean).map(t => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}
+      <div class="row" style="margin-top:16px"><a class="btn primary" href="docente-asistencia.html">Tomar asistencia</a><a class="btn" href="recursos.html">Recursos para la clase</a>${esUrl(prox.presentacion) ? `<a class="btn" href="${esc(prox.presentacion)}" target="_blank" rel="noopener">Presentación</a>` : ""}</div></div>` : ""}
+    <section class="card"><h2>El curso en números</h2><div class="nums">
+      <div><b>${N}</b>Estudiantes</div>
+      <div><b>${prom === null ? "—" : prom + " %"}</b>Asistencia promedio</div>
+      <div><b>${prom === null ? "—" : bajo}</b>Debajo del 75 %</div>
+      <div><b>${tom.length}</b>Clases con asistencia</div></div></section>
+    <section class="card"><div class="row between" style="margin-bottom:6px"><h2 style="margin:0">Consignas, tareas y avisos</h2><button class="btn small" id="nuevo" type="button">Nuevo aviso</button></div>
+      ${editando === "nuevo" ? form({}) : ""}
+      ${avisos.length || editando ? avisos.map(a => editando === a.id ? form(a) : `<div class="av"><div><b>${esc(a.titulo)}</b>${a.url ? ` · <a href="${esc(a.url)}" target="_blank" rel="noopener">enlace</a>` : ""}</div>
+        <div class="bar"><div><i style="width:${N ? hechos(a.id) / N * 100 : 0}%"></i></div><span>${hechos(a.id)} de ${N}</span></div>
+        <div class="acts"><button class="btn link" type="button" data-ed="${a.id}">Editar</button><button class="btn link" type="button" data-del="${a.id}">Borrar</button></div></div>`).join("") : '<p class="empty">Todavía no hay avisos.</p>'}
+    </section>`;
+    $("#nuevo").onclick = () => { editando = "nuevo"; draw(); $("#avT").focus(); };
+    main.querySelectorAll("[data-ed]").forEach(b => b.onclick = () => { editando = b.dataset.ed; draw(); });
+    main.querySelectorAll("[data-del]").forEach(b => b.onclick = async () => {
+      if(!confirm("¿Borrar este aviso?")) return;
+      try{ await F.deleteDoc(F.doc(db, "avisos", b.dataset.del)); avisos = avisos.filter(a => a.id !== b.dataset.del); draw(); }catch(e){ toast("No se pudo borrar."); }
+    });
+    const sv = $("#avS"); if(sv) sv.onclick = guardar;
+    const cc = $("#avC"); if(cc) cc.onclick = () => { editando = null; draw(); };
+  }
+  function form(a){
+    return `<div class="edit"><input type="text" id="avT" maxlength="120" placeholder="Texto del aviso" value="${esc(a.titulo || "")}" aria-label="Texto del aviso">
+      <input type="url" id="avU" placeholder="Enlace (opcional)" value="${esc(a.url || "")}" aria-label="Enlace">
+      <div class="row"><button class="btn primary small" id="avS" type="button">Publicar</button><button class="btn link" id="avC" type="button">Cancelar</button></div></div>`;
+  }
+  async function guardar(){
+    const titulo = $("#avT").value.trim(), url = $("#avU").value.trim();
+    if(!titulo){ toast("Escribí el texto del aviso."); return; }
+    if(url && !esUrl(url)){ toast("El enlace tiene que empezar con https://"); return; }
+    try{
+      if(editando === "nuevo"){
+        const orden = avisos.reduce((m, a) => Math.max(m, a.orden || 0), 0) + 1;
+        const r = await F.addDoc(F.collection(db, "avisos"), { titulo, url, orden, creado: F.serverTimestamp() });
+        avisos.push({ id: r.id, titulo, url, orden });
+      }else{
+        await F.updateDoc(F.doc(db, "avisos", editando), { titulo, url });
+        Object.assign(avisos.find(a => a.id === editando), { titulo, url });
+      }
+      editando = null; toast("Aviso publicado"); draw();
+    }catch(e){ console.error(e); toast("No se pudo guardar."); }
+  }
+  draw();
 });
 </script>
 </body>

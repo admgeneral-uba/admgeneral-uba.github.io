@@ -3,256 +3,183 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Área docente</title>
 <meta name="robots" content="noindex">
-<link rel="stylesheet" href="estilos.css">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
+<title>Asistencia · Área docente</title>
+<link rel="icon" href="img/uba.png">
+<link rel="stylesheet" href="sitio.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
-.proj{position:fixed;inset:0;background:var(--paper);z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;text-align:center}
-.qrbox{display:flex;gap:40px;flex-wrap:wrap;align-items:center;justify-content:center}
-.qr{background:#fff;padding:16px;border-radius:12px;line-height:0}
-.codigo{font-size:clamp(64px,14vw,150px);font-weight:700;letter-spacing:.12em;font-variant-numeric:tabular-nums;line-height:1}
-.barra{height:6px;background:var(--line);border-radius:3px;overflow:hidden;width:min(320px,70vw);margin:12px auto 0}
-.barra i{display:block;height:100%;background:var(--accent);transition:width 1s linear}
-.contador{font-size:24px;font-weight:600}
-.url{font-size:18px;color:var(--muted);word-break:break-all}
-.cierra{position:absolute;top:16px;right:16px}
+.cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:24px;align-items:start}
+@media (max-width:900px){.cols{grid-template-columns:1fr}}
+.big{font-family:var(--serif);font-weight:700;font-size:44px;line-height:1}
+.livetag{display:inline-flex;align-items:center;gap:8px;font-weight:700;color:var(--live-ink)}
+.livetag i{width:10px;height:10px;border-radius:50%;background:var(--live);animation:p 1.4s infinite}
+@keyframes p{50%{opacity:.35}}
+table{border-collapse:collapse;width:100%}
+th{text-align:left;font-size:14px;color:var(--muted);padding:8px 6px;border-bottom:1px solid var(--line)}
+td{padding:8px 6px;border-bottom:1px solid var(--line2)}
+.scroll{max-height:520px;overflow:auto}
+.proj{position:fixed;inset:0;background:#fff url(img/fondo-intenso.jpg) center/cover;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px;text-align:center}
+.proj .panel{background:rgba(255,255,255,.94);border-radius:24px;padding:28px 40px;display:flex;gap:44px;align-items:center;flex-wrap:wrap;justify-content:center}
+.proj .qr{background:#fff;padding:14px;border-radius:12px;line-height:0}
+.proj .codigo{font-family:var(--serif);font-size:clamp(64px,13vw,150px);font-weight:700;letter-spacing:.1em;line-height:1;font-variant-numeric:tabular-nums}
+.proj .barra{height:8px;background:var(--line);border-radius:4px;overflow:hidden;width:min(320px,70vw);margin:12px auto 0}
+.proj .barra i{display:block;height:100%;background:var(--live);transition:width 1s linear}
+.proj h2{margin:0;font-size:clamp(24px,3vw,34px)}
+.proj .cierra{position:absolute;top:16px;right:16px}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <header><a href="./"><h1 data-curso>Administración General</h1></a><p>Área docente</p></header>
-  <div id="app"><p class="muted">Cargando…</p></div>
-</div>
-<div id="proj" class="proj hide"></div>
-
 <script type="module">
-import { db, auth, configurado, encabezado, esc, avisoSinConfig } from "./firebase.js";
-import { SEGUNDOS_POR_CODIGO } from "./config.js";
-import { doc, getDoc, setDoc, updateDoc, deleteDoc, collection, query, where, orderBy, getDocs, onSnapshot, serverTimestamp, Timestamp }
-  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut }
-  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { iniciar, db, F, esc, toast, $, leerClases, corta, hoyISO, descargarCSV, CURSO_INFO } from "./app.js";
 
-encabezado();
-const app = document.getElementById("app");
-const proj = document.getElementById("proj");
-const $ = s => document.querySelector(s);
-const toast = m => { const t = document.createElement("div"); t.className = "toast"; t.textContent = m; document.body.appendChild(t); setTimeout(() => t.remove(), 2800); };
-const URL_ASISTENCIA = new URL("asistencia.html", location.href).href.split("?")[0];
-const hoyTxt = () => new Date().toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" });
-const fechaTxt = ts => ts && ts.toDate ? ts.toDate().toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
+const SEG = CURSO_INFO.segundosCodigo || 30;
+const URL_A = new URL("asistencia.html", location.href).href.split("?")[0];
 const horaTxt = ts => ts && ts.toDate ? ts.toDate().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }) : "";
-
-let activa = null;          // { sid, titulo, codigo }
-let rotador = null, cuenta = null, desuscribir = null, presentes = [];
-
-if(!configurado){ avisoSinConfig(app); }
-else onAuthStateChanged(auth, u => u ? panel(u) : login());
-
-function login(){
-  app.innerHTML = `<div class="panel"><h2>Ingresar</h2>
-    <p class="muted">Entrá con la cuenta de Google que pusiste en las reglas de Firebase.</p>
-    <button class="btn primary" id="entrar">Ingresar con Google</button><p class="error" id="err"></p></div>`;
-  $("#entrar").onclick = async () => {
-    try{ await signInWithPopup(auth, new GoogleAuthProvider()); }
-    catch(e){ console.error(e); $("#err").textContent = e.code === "auth/unauthorized-domain"
-      ? "Falta autorizar este dominio en Firebase (Authentication → Configuración → Dominios autorizados)."
-      : "No se pudo ingresar. Intentá de nuevo."; }
-  };
-}
-
-async function panel(user){
-  app.innerHTML = `
-    <div class="row small muted" style="justify-content:space-between;margin-bottom:14px">
-      <span>${esc(user.email)}</span><button class="btn link" id="salir">Salir</button></div>
-    <div class="panel" id="tomar"></div>
-    <div class="panel"><div class="row" style="justify-content:space-between">
-      <h2 style="margin:0">Registro</h2><button class="btn" id="csvTodo">Descargar planilla completa</button></div>
-      <label for="selSesion">Clase</label><select id="selSesion"></select>
-      <div id="lista" style="margin-top:12px"></div></div>`;
-  $("#salir").onclick = () => signOut(auth);
-  $("#csvTodo").onclick = csvCompleto;
-
-  // ¿Quedó una asistencia abierta (por ejemplo, si recargaste la página)?
-  try{
-    const pub = await getDoc(doc(db, "publico", "actual"));
-    if(pub.exists() && pub.data().activa){
-      const s = await getDoc(doc(db, "sesiones", pub.data().sesion));
-      if(s.exists()) activa = { sid: s.id, titulo: s.data().titulo, codigo: s.data().codigo };
-    }
-  }catch(e){
-    console.error(e);
-    if(e.code === "permission-denied"){
-      app.innerHTML = `<div class="panel"><h2>Esta cuenta no tiene acceso</h2>
-        <p class="muted">Revisá que el email <b>${esc(user.email)}</b> esté escrito en las reglas de Firestore.</p>
-        <button class="btn" id="salir2">Salir</button></div>`;
-      $("#salir2").onclick = () => signOut(auth); return;
-    }
-  }
-  pintarTomar();
-  cargarSesiones();
-  if(activa) arrancarRotacion();
-}
-
-function pintarTomar(){
-  const t = $("#tomar"); if(!t) return;
-  if(!activa){
-    t.innerHTML = `<h2>Tomar asistencia</h2>
-      <label for="titulo">Nombre de la clase</label>
-      <input id="titulo" value="Clase del ${hoyTxt()}">
-      <button class="btn primary block" id="abrir">Abrir asistencia</button>`;
-    $("#abrir").onclick = abrir;
-    return;
-  }
-  t.innerHTML = `<div class="livetag">Asistencia abierta</div>
-    <h2 style="margin-top:6px">${esc(activa.titulo)}</h2>
-    <p style="margin:0"><b id="nPresentes">${presentes.length}</b> presentes · código actual <b id="codChico">${esc(activa.codigo)}</b></p>
-    <div class="row" style="margin-top:14px">
-      <button class="btn primary" id="mostrar">Mostrar QR en pantalla</button>
-      <button class="btn danger" id="cerrar">Cerrar asistencia</button></div>`;
-  $("#mostrar").onclick = mostrarProyector;
-  $("#cerrar").onclick = cerrar;
-}
-
 const nuevoCodigo = prev => { let c; do { c = String(Math.floor(1000 + Math.random() * 9000)); } while(c === prev); return c; };
 
-async function abrir(){
-  const titulo = $("#titulo").value.trim() || `Clase del ${hoyTxt()}`;
-  const sid = new Date().toISOString().slice(0, 10) + "-" + Math.random().toString(36).slice(2, 6);
-  const codigo = nuevoCodigo();
-  $("#abrir").disabled = true;
-  try{
-    await setDoc(doc(db, "sesiones", sid), { titulo, activa: true, codigo, codigoAnterior: codigo, creada: serverTimestamp() });
-    await setDoc(doc(db, "publico", "actual"), { sesion: sid, titulo, activa: true });
-    activa = { sid, titulo, codigo };
-    presentes = [];
-    pintarTomar(); arrancarRotacion(); cargarSesiones(sid); mostrarProyector();
-  }catch(e){ console.error(e); toast("No se pudo abrir la asistencia."); $("#abrir").disabled = false; }
-}
-
-function arrancarRotacion(){
-  clearInterval(rotador);
-  let quedan = SEGUNDOS_POR_CODIGO;
-  rotador = setInterval(async () => {
-    quedan--;
-    const b = $("#barraCod"); if(b) b.style.width = (quedan / SEGUNDOS_POR_CODIGO * 100) + "%";
-    if(quedan > 0) return;
-    quedan = SEGUNDOS_POR_CODIGO;
-    const anterior = activa.codigo, codigo = nuevoCodigo(anterior);
-    try{
-      await updateDoc(doc(db, "sesiones", activa.sid), { codigo, codigoAnterior: anterior });
-      activa.codigo = codigo; pintarCodigo();
-    }catch(e){ console.error(e); }
-  }, 1000);
-  if(desuscribir) desuscribir();
-  desuscribir = onSnapshot(query(collection(db, "asistencias"), where("sesion", "==", activa.sid)), snap => {
-    presentes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    const n = $("#nPresentes"); if(n) n.textContent = presentes.length;
-    const p = $("#projN"); if(p) p.textContent = `${presentes.length} presentes`;
-    if($("#selSesion") && $("#selSesion").value === activa.sid) pintarLista(activa.sid, presentes);
-  });
-}
-
-function pintarCodigo(){
-  const c = $("#codChico"); if(c) c.textContent = activa.codigo;
-  const g = $("#codGrande"); if(g) g.textContent = activa.codigo;
-  const q = $("#qr");
-  if(q){
-    q.innerHTML = "";
-    if(window.QRCode) new QRCode(q, { text: URL_ASISTENCIA + "?c=" + activa.codigo, width: 320, height: 320, correctLevel: QRCode.CorrectLevel.M });
-    else q.innerHTML = `<p style="color:#333;line-height:1.4">No se pudo cargar el generador de QR. Usá el código.</p>`;
+iniciar({ area: "docente", activo: "Asistencia", titulo: "Asistencia", fondo: "intenso" }, async (user, main) => {
+  const clases = await leerClases();
+  const nombreClase = id => { const c = clases.find(x => x.id === id); return c ? `Clase ${c.n}: ${c.titulo}` : id; };
+  let activa = null, presentes = [], rot = null, unsub = null, quedan = SEG;
+  let tomadas = {};
+  const pa = await F.getDoc(F.doc(db, "publico", "asistencia")); if(pa.exists()) tomadas = pa.data().tomadas || {};
+  const pub = await F.getDoc(F.doc(db, "publico", "actual"));
+  if(pub.exists() && pub.data().activa){
+    const s = await F.getDoc(F.doc(db, "sesiones", pub.data().sesion));
+    if(s.exists() && s.data().activa) activa = { sid: s.id, titulo: s.data().titulo, codigo: s.data().codigo };
   }
-  const b = $("#barraCod"); if(b){ b.style.transition = "none"; b.style.width = "100%"; b.offsetWidth; b.style.transition = ""; }
-}
 
-function mostrarProyector(){
-  proj.classList.remove("hide");
-  proj.innerHTML = `<button class="btn cierra" id="cerrarProj">Cerrar pantalla</button>
-    <div class="muted" style="font-size:20px">${esc(activa.titulo)}</div>
-    <div class="qrbox">
-      <div class="qr" id="qr"></div>
-      <div><div class="muted" style="font-size:18px">Código</div>
-        <div class="codigo" id="codGrande"></div>
-        <div class="barra"><i id="barraCod" style="width:100%"></i></div>
-        <p class="contador" id="projN">${presentes.length} presentes</p></div>
-    </div>
-    <div class="url">Sin cámara: entrá a <b>${esc(URL_ASISTENCIA)}</b> y escribí el código</div>`;
-  pintarCodigo();
-  $("#cerrarProj").onclick = () => proj.classList.add("hide");
-  if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
-}
+  main.innerHTML = `<div class="cols"><div class="card" id="tomar"></div>
+    <div class="card"><div class="row between" style="margin-bottom:10px"><h2 style="margin:0">Registro</h2><button class="btn small" id="csv" type="button">Descargar planilla</button></div>
+      <select id="sel" aria-label="Clase"></select><div id="lista" style="margin-top:14px"></div></div></div>
+    <div id="proj" class="proj" hidden></div>`;
+  $("#csv").onclick = planilla;
 
-async function cerrar(){
-  if(!confirm("¿Cerrar la asistencia? Nadie más va a poder registrarse en esta clase.")) return;
-  try{
-    await updateDoc(doc(db, "sesiones", activa.sid), { activa: false });
-    await setDoc(doc(db, "publico", "actual"), { sesion: activa.sid, titulo: activa.titulo, activa: false });
-    clearInterval(rotador); if(desuscribir) desuscribir(); desuscribir = null;
-    const sid = activa.sid; activa = null; proj.classList.add("hide");
-    if(document.fullscreenElement) document.exitFullscreen().catch(() => {});
-    pintarTomar(); cargarSesiones(sid); toast("Asistencia cerrada");
-  }catch(e){ console.error(e); toast("No se pudo cerrar. Intentá de nuevo."); }
-}
+  function pintarTomar(){
+    const t = $("#tomar");
+    if(!activa){
+      const hoy = hoyISO(), sug = clases.find(c => c.fecha >= hoy) || clases[clases.length - 1];
+      t.innerHTML = `<h2>Tomar asistencia</h2>
+        <label class="l" for="clase">Clase</label>
+        <select id="clase">${clases.map(c => `<option value="${c.id}"${sug && c.id === sug.id ? " selected" : ""}>${c.n}. ${esc(corta(c.fecha))} · ${esc(c.titulo)}</option>`).join("")}</select>
+        <div class="row" style="margin-top:16px"><button class="btn primary" id="abrir" type="button">Abrir asistencia</button></div>`;
+      $("#abrir").onclick = abrir; return;
+    }
+    t.innerHTML = `<span class="livetag"><i></i>Abierta</span>
+      <h2 style="margin:6px 0 14px">${esc(activa.titulo)}</h2>
+      <div class="row" style="gap:28px;align-items:flex-end"><div><div class="big" id="n">${presentes.length}</div><span class="muted">presentes</span></div>
+        <div><div class="big" id="cod" style="letter-spacing:.08em">${esc(activa.codigo)}</div><span class="muted">código</span></div></div>
+      <div class="row" style="margin-top:18px"><button class="btn primary" id="mostrar" type="button">Proyectar QR</button><button class="btn" id="cerrar" type="button">Cerrar asistencia</button></div>`;
+    $("#mostrar").onclick = proyectar; $("#cerrar").onclick = cerrar;
+  }
 
-/* ---------- registro e historial ---------- */
-let sesiones = [];
-async function cargarSesiones(elegir){
-  try{
-    const snap = await getDocs(query(collection(db, "sesiones"), orderBy("creada", "desc")));
-    sesiones = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  }catch(e){ console.error(e); return; }
-  const sel = $("#selSesion"); if(!sel) return;
-  if(!sesiones.length){ sel.innerHTML = `<option>Todavía no hay clases</option>`; $("#lista").innerHTML = ""; return; }
-  sel.innerHTML = sesiones.map(s => `<option value="${esc(s.id)}">${fechaTxt(s.creada)} · ${esc(s.titulo)}</option>`).join("");
-  if(elegir) sel.value = elegir;
-  sel.onchange = () => verSesion(sel.value);
-  verSesion(sel.value);
-}
-async function verSesion(sid){
-  if(activa && sid === activa.sid) return pintarLista(sid, presentes);
-  const snap = await getDocs(query(collection(db, "asistencias"), where("sesion", "==", sid)));
-  pintarLista(sid, snap.docs.map(d => ({ id: d.id, ...d.data() })));
-}
-function pintarLista(sid, regs){
-  const l = $("#lista"); if(!l) return;
-  const orden = regs.slice().sort((a, b) => (a.nombre || "").localeCompare(b.nombre || "", "es"));
-  l.innerHTML = orden.length ? `
-    <div class="row" style="justify-content:space-between"><span class="muted">${orden.length} presentes</span>
-      <button class="btn" id="csvUna">Descargar esta clase</button></div>
-    <div class="scroll"><table><tr><th>Nombre</th><th>Legajo</th><th>Hora</th><th></th></tr>
-    ${orden.map(r => `<tr><td>${esc(r.nombre)}</td><td>${esc(r.legajo)}</td><td>${horaTxt(r.hora)}</td>
-      <td><button class="btn link" data-borrar="${esc(r.id)}" aria-label="Quitar registro de ${esc(r.nombre)}">Quitar</button></td></tr>`).join("")}
-    </table></div>` : `<p class="muted">Nadie se registró en esta clase.</p>`;
-  const b = $("#csvUna"); if(b) b.onclick = () => {
-    const s = sesiones.find(x => x.id === sid);
-    descargar(`asistencia-${sid}.csv`, [["Nombre", "Legajo", "Hora"], ...orden.map(r => [r.nombre, r.legajo, horaTxt(r.hora)])]);
-  };
-  l.querySelectorAll("[data-borrar]").forEach(btn => btn.onclick = async () => {
-    if(!confirm("¿Quitar este registro?")) return;
-    try{ await deleteDoc(doc(db, "asistencias", btn.dataset.borrar)); if(!(activa && sid === activa.sid)) verSesion(sid); }
-    catch(e){ console.error(e); toast("No se pudo quitar."); }
-  });
-}
-async function csvCompleto(){
-  if(!sesiones.length){ toast("Todavía no hay clases."); return; }
-  const snap = await getDocs(collection(db, "asistencias"));
-  const cls = sesiones.slice().reverse();
-  const alumnos = new Map();
-  snap.docs.forEach(d => { const r = d.data(); if(!alumnos.has(r.legajo)) alumnos.set(r.legajo, { nombre: r.nombre, legajo: r.legajo, clases: new Set() }); alumnos.get(r.legajo).clases.add(r.sesion); });
-  const filas = [["Nombre", "Legajo", ...cls.map(c => `${fechaTxt(c.creada)} ${c.titulo}`), "Total"]];
-  [...alumnos.values()].sort((a, b) => a.nombre.localeCompare(b.nombre, "es")).forEach(a =>
-    filas.push([a.nombre, a.legajo, ...cls.map(c => a.clases.has(c.id) ? "P" : ""), cls.filter(c => a.clases.has(c.id)).length]));
-  descargar("asistencia-completa.csv", filas);
-}
-function descargar(nombre, filas){
-  const csv = "\ufeff" + filas.map(f => f.map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(";")).join("\r\n");
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
-  a.download = nombre; document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
-}
+  async function abrir(){
+    const sid = $("#clase").value, titulo = nombreClase(sid), codigo = nuevoCodigo();
+    $("#abrir").disabled = true;
+    try{
+      await F.setDoc(F.doc(db, "sesiones", sid), { titulo, activa: true, codigo, codigoAnterior: codigo, creada: F.serverTimestamp() }, { merge: true });
+      await F.setDoc(F.doc(db, "publico", "actual"), { sesion: sid, titulo, activa: true });
+      await F.setDoc(F.doc(db, "publico", "asistencia"), { tomadas: { [sid]: true } }, { merge: true });
+      tomadas[sid] = true;
+      activa = { sid, titulo, codigo };
+      escuchar(); pintarTomar(); llenarSel(sid); proyectar();
+    }catch(e){ console.error(e); toast("No se pudo abrir la asistencia."); $("#abrir").disabled = false; }
+  }
+  function escuchar(){
+    clearInterval(rot); quedan = SEG;
+    rot = setInterval(async () => {
+      quedan--; const b = $("#barra"); if(b) b.style.width = (quedan / SEG * 100) + "%";
+      if(quedan > 0) return; quedan = SEG;
+      const ant = activa.codigo, codigo = nuevoCodigo(ant);
+      try{ await F.updateDoc(F.doc(db, "sesiones", activa.sid), { codigo, codigoAnterior: ant }); activa.codigo = codigo; pintarCodigo(); }catch(e){ console.error(e); }
+    }, 1000);
+    if(unsub) unsub();
+    unsub = F.onSnapshot(F.query(F.collection(db, "asistencias"), F.where("sesion", "==", activa.sid)), snap => {
+      presentes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const n = $("#n"); if(n) n.textContent = presentes.length;
+      const p = $("#projN"); if(p) p.textContent = presentes.length + " presentes";
+      if($("#sel").value === activa.sid) pintarLista(activa.sid, presentes);
+    });
+  }
+  function pintarCodigo(){
+    const c = $("#cod"); if(c) c.textContent = activa.codigo;
+    const g = $("#codG"); if(g) g.textContent = activa.codigo;
+    const q = $("#qr"); if(q){ q.innerHTML = ""; if(window.QRCode) new QRCode(q, { text: URL_A + "?c=" + activa.codigo, width: 300, height: 300, correctLevel: QRCode.CorrectLevel.M }); }
+    const b = $("#barra"); if(b){ b.style.transition = "none"; b.style.width = "100%"; b.offsetWidth; b.style.transition = ""; }
+  }
+  function proyectar(){
+    const p = $("#proj"); p.hidden = false;
+    p.innerHTML = `<button class="btn cierra" id="cp" type="button">Cerrar pantalla</button>
+      <h2>${esc(activa.titulo)}</h2>
+      <div class="panel"><div class="qr" id="qr"></div>
+        <div><div class="codigo" id="codG"></div><div class="barra"><i id="barra" style="width:100%"></i></div>
+        <p style="font-size:24px;font-weight:700;margin:14px 0 0" id="projN">${presentes.length} presentes</p></div></div>
+      <div style="font-size:20px;background:rgba(255,255,255,.85);border-radius:10px;padding:6px 14px">${esc(URL_A.replace(/^https?:\/\//, ""))}</div>`;
+    pintarCodigo();
+    $("#cp").onclick = () => { p.hidden = true; if(document.fullscreenElement) document.exitFullscreen().catch(() => {}); };
+    if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
+  }
+  async function cerrar(){
+    if(!confirm("¿Cerrar la asistencia?")) return;
+    try{
+      await F.updateDoc(F.doc(db, "sesiones", activa.sid), { activa: false });
+      await F.setDoc(F.doc(db, "publico", "actual"), { sesion: activa.sid, titulo: activa.titulo, activa: false });
+      clearInterval(rot); if(unsub) unsub(); unsub = null;
+      const sid = activa.sid; activa = null; $("#proj").hidden = true;
+      pintarTomar(); llenarSel(sid); toast("Asistencia cerrada");
+    }catch(e){ console.error(e); toast("No se pudo cerrar."); }
+  }
+
+  function llenarSel(elegir){
+    const ids = clases.filter(c => tomadas[c.id]).map(c => c.id);
+    const sel = $("#sel");
+    if(!ids.length){ sel.hidden = true; $("#lista").innerHTML = '<p class="empty">Todavía no se tomó asistencia.</p>'; return; }
+    sel.hidden = false;
+    sel.innerHTML = ids.slice().reverse().map(id => `<option value="${id}">${esc(nombreClase(id))}</option>`).join("");
+    if(elegir) sel.value = elegir;
+    sel.onchange = () => ver(sel.value); ver(sel.value);
+  }
+  async function ver(sid){
+    if(activa && sid === activa.sid) return pintarLista(sid, presentes);
+    const s = await F.getDocs(F.query(F.collection(db, "asistencias"), F.where("sesion", "==", sid)));
+    pintarLista(sid, s.docs.map(d => ({ id: d.id, ...d.data() })));
+  }
+  async function pintarLista(sid, regs){
+    const orden = regs.slice().sort((a, b) => (a.nombre || "").localeCompare(b.nombre || "", "es"));
+    const est = await F.getDocs(F.collection(db, "estudiantes"));
+    const ya = new Set(orden.map(r => r.uid));
+    const faltan = est.docs.filter(d => !ya.has(d.id)).map(d => ({ uid: d.id, nombre: [d.data().perfil?.nombre, d.data().perfil?.apellido].filter(Boolean).join(" ") || d.data().nombreGoogle || d.data().email || d.id, email: d.data().email || "" })).sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+    $("#lista").innerHTML = `<p style="margin:0 0 8px"><b>${orden.length}</b> presentes</p>
+      ${orden.length ? `<div class="scroll"><table><tr><th>Estudiante</th><th>Hora</th><th></th></tr>${orden.map(r => `<tr><td>${esc(r.nombre)}</td><td>${horaTxt(r.hora)}</td><td style="text-align:right"><button class="btn link" type="button" data-q="${esc(r.id)}">Quitar</button></td></tr>`).join("")}</table></div>` : ""}
+      ${faltan.length ? `<div class="row" style="margin-top:14px"><select id="add" aria-label="Agregar presente" style="flex:1;min-width:200px"><option value="">Agregar presente…</option>${faltan.map(f => `<option value="${esc(f.uid)}">${esc(f.nombre)}</option>`).join("")}</select><button class="btn small" id="addB" type="button">Agregar</button></div>` : ""}`;
+    $("#lista").querySelectorAll("[data-q]").forEach(b => b.onclick = async () => {
+      if(!confirm("¿Quitar este presente?")) return;
+      try{ await F.deleteDoc(F.doc(db, "asistencias", b.dataset.q)); if(!(activa && sid === activa.sid)) ver(sid); }catch(e){ toast("No se pudo quitar."); }
+    });
+    const ab = $("#addB"); if(ab) ab.onclick = async () => {
+      const f = faltan.find(x => x.uid === $("#add").value); if(!f) return;
+      try{ await F.setDoc(F.doc(db, "asistencias", sid + "_" + f.uid), { sesion: sid, uid: f.uid, nombre: f.nombre, email: f.email, manual: true, hora: F.serverTimestamp() }); if(!(activa && sid === activa.sid)) ver(sid); toast("Presente agregado"); }
+      catch(e){ console.error(e); toast("No se pudo agregar."); }
+    };
+  }
+  async function planilla(){
+    const ids = clases.filter(c => tomadas[c.id]);
+    if(!ids.length){ toast("Todavía no se tomó asistencia."); return; }
+    const [as, est] = await Promise.all([F.getDocs(F.collection(db, "asistencias")), F.getDocs(F.collection(db, "estudiantes"))]);
+    const al = new Map();
+    est.docs.forEach(d => { const p = d.data().perfil || {}; al.set(d.id, { ap: p.apellido || "", no: p.nombre || d.data().nombreGoogle || "", leg: p.legajo || "", email: d.data().email || "", cl: new Set() }); });
+    as.docs.forEach(d => { const r = d.data(); if(!r.uid) return; if(!al.has(r.uid)) al.set(r.uid, { ap: "", no: r.nombre, leg: "", email: r.email || "", cl: new Set() }); al.get(r.uid).cl.add(r.sesion); });
+    const filas = [["Apellido", "Nombre", "Legajo", "Email", ...ids.map(c => `Clase ${c.n} (${corta(c.fecha)})`), "Presentes", "Asistencia"]];
+    [...al.values()].sort((a, b) => (a.ap + a.no).localeCompare(b.ap + b.no, "es")).forEach(a => {
+      const n = ids.filter(c => a.cl.has(c.id)).length;
+      filas.push([a.ap, a.no, a.leg, a.email, ...ids.map(c => a.cl.has(c.id) ? "P" : "A"), n, Math.round(n / ids.length * 100) + " %"]);
+    });
+    descargarCSV("asistencia.csv", filas);
+  }
+  pintarTomar(); llenarSel(activa && activa.sid);
+  if(activa) escuchar();
+});
 </script>
 </body>
 </html>

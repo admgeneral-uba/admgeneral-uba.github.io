@@ -21,16 +21,16 @@
 </head>
 <body>
 <script type="module">
-import { iniciar, esc, leerClases, hoyISO, aFecha, DIAS } from "./app.js";
+import { iniciar, esc, leerClases, leerTomadas, misPresentes, hoyISO, aFecha, DIAS } from "./app.js";
 iniciar({ area: "estudiantes", activo: "Cronograma", titulo: "Cronograma" }, async (user, main) => {
-  const clases = await leerClases(), hoy = hoyISO();
+  const [clases, tomadas, pres] = await Promise.all([leerClases(), leerTomadas(), misPresentes(user.uid)]), hoy = hoyISO();
   if(!clases.length){ main.innerHTML = '<div class="card"><p class="empty">Todavía no está cargado el cronograma.</p></div>'; return; }
   const prox = clases.find(c => c.fecha >= hoy);
   main.innerHTML = `<div class="list">${clases.map(c => {
     const d = aFecha(c.fecha), cls = c.fecha < hoy ? "past" : c === prox ? "next" : "";
     return `<article class="cl ${cls}"${c === prox ? ' id="proxima"' : ""}>
       <div class="d">${d.getDate()}/${d.getMonth() + 1}<small>${DIAS[d.getDay()]} · ${esc(c.modalidad)}</small></div>
-      <div><div class="m"><span class="muted small">Clase ${c.n}${c.unidad ? " · Unidad " + c.unidad : ""}</span></div>
+      <div><div class="m"><span class="muted small">Clase ${c.n}${c.unidad ? " · Unidad " + c.unidad : ""}</span>${tomadas[c.id] ? (pres[c.id] ? '<span class="pill ok">Presente</span>' : '<span class="pill bad">Ausente</span>') : ""}</div>
         <h2>${esc(c.titulo)}</h2>
         ${c.temas ? `<ul>${c.temas.split("\n").filter(Boolean).map(t => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}</div>
     </article>`;

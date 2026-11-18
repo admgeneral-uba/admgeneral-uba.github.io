@@ -23,15 +23,21 @@
 @media (prefers-reduced-motion:reduce){.dot{animation:none}}
 .rec{display:flex;flex-direction:column;gap:12px}
 .rec a{font-weight:700}
+.avs{display:flex;flex-direction:column}
+.av{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid var(--line2)}
+.av:first-child{border-top:0;padding-top:0}
+.av.done>span:first-child{color:var(--muted)}
 .rec p{margin:2px 0 0;color:var(--text);font-size:16px}
 </style>
 </head>
 <body>
 <script type="module">
-import { iniciar, db, F, esc, leerClases, leerUnidades, larga, hoyISO, esUrl, CURSO_INFO } from "./app.js";
+import { iniciar, db, F, esc, toast, leerClases, leerUnidades, leerMiDoc, larga, hoyISO, esUrl, botonToggle, ICON, CURSO_INFO } from "./app.js";
 
 iniciar({ area: "estudiantes", activo: "", titulo: CURSO_INFO.nombre, subtitulo: CURSO_INFO.subtitulo, grande: true }, async (user, main) => {
-  const [clases, unidades] = await Promise.all([leerClases(), leerUnidades()]);
+  const [clases, unidades, mio, avs] = await Promise.all([leerClases(), leerUnidades(), leerMiDoc(user.uid), F.getDocs(F.collection(db, "avisos"))]);
+  const hechos = { ...(mio.hechos || {}) };
+  const avisos = avs.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.orden || 0) - (b.orden || 0));
   const hoy = hoyISO();
   const actual = clases.find(c => c.fecha >= hoy) || clases[clases.length - 1];
   const u = actual && actual.unidad ? unidades[actual.unidad] : null;
@@ -49,10 +55,19 @@ iniciar({ area: "estudiantes", activo: "", titulo: CURSO_INFO.nombre, subtitulo:
         : `<h2>¡Hola${nombre ? ", " + esc(nombre) : ""}!</h2><p class="empty">Pronto vas a ver acá el cronograma de las clases.</p>`}
       </div>
       <div class="side">
+        ${avisos.length ? `<div class="card"><h2>Consignas, tareas y avisos</h2><div class="avs">${avisos.map(a => `<div class="av${hechos[a.id] ? " done" : ""}"><span>${esUrl(a.url) ? `<a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.titulo)}</a>` : esc(a.titulo)}</span><span data-av="${a.id}">${botonToggle("Hecho", !!hechos[a.id])}</span></div>`).join("")}</div></div>` : ""}
         ${u && u.recomendaciones && u.recomendaciones.length ? `<div class="card"><h2>Recomendaciones</h2><div class="rec">${u.recomendaciones.map(r => `<div>${esUrl(r.url) ? `<a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.titulo)}</a>` : `<b>${esc(r.titulo)}</b>`}${r.descripcion ? `<p>${esc(r.descripcion)}</p>` : ""}</div>`).join("")}</div></div>` : ""}
         <div class="card"><h2>Materiales</h2><div class="row"><a class="btn primary" href="materiales.html">Ver lecturas y presentaciones</a><a class="btn" href="cronograma.html">Cronograma</a></div></div>
       </div>
     </div>`;
+
+  main.querySelectorAll("[data-av]").forEach(w => w.addEventListener("click", async () => {
+    const k = w.dataset.av, b = w.querySelector("button"), on = !hechos[k];
+    const pintar = v => { b.setAttribute("aria-pressed", v); b.innerHTML = (v ? ICON.check : ICON.circle) + "Hecho"; w.parentElement.classList.toggle("done", v); };
+    hechos[k] = on; pintar(on);
+    try{ await F.setDoc(F.doc(db, "estudiantes", user.uid), { hechos: { [k]: on } }, { merge: true }); }
+    catch(e){ console.error(e); hechos[k] = !on; pintar(!on); toast("No se pudo guardar."); }
+  }));
 
   // Ahora en clase: asistencia abierta o dinámica activa
   let asis = null, din = null;

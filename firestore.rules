@@ -20,25 +20,26 @@ service cloud.firestore {
       allow write: if esDocente();
     }
 
-    // Registros de asistencia.
+    // Registros de asistencia (con la cuenta de Google del estudiante).
     match /asistencias/{aid} {
       function sesion() {
         return get(/databases/$(database)/documents/sesiones/$(request.resource.data.sesion)).data;
       }
-      // Un estudiante puede CREAR su registro (no leer, modificar ni borrar)
-      // solo si la asistencia está abierta y el código es el vigente o el anterior.
-      // El id es sesion_legajo, así que el mismo legajo no puede registrarse dos veces.
-      allow create: if
-        request.resource.data.keys().hasOnly(['sesion','nombre','legajo','codigo','hora'])
+      // Un estudiante puede CREAR su propio registro si la asistencia está abierta
+      // y el código es el vigente o el anterior. El id es sesion_uid: uno por clase.
+      allow create: if esDocente() || (
+        request.auth != null
+        && request.resource.data.keys().hasOnly(['sesion','uid','nombre','email','codigo','hora'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.email == request.auth.token.email
         && request.resource.data.nombre is string
-        && request.resource.data.nombre.size() >= 3 && request.resource.data.nombre.size() <= 80
-        && request.resource.data.legajo is string
-        && request.resource.data.legajo.size() >= 1 && request.resource.data.legajo.size() <= 20
+        && request.resource.data.nombre.size() >= 1 && request.resource.data.nombre.size() <= 100
         && request.resource.data.hora == request.time
-        && aid == request.resource.data.sesion + '_' + request.resource.data.legajo
+        && aid == request.resource.data.sesion + '_' + request.auth.uid
         && sesion().activa == true
-        && request.resource.data.codigo in [sesion().codigo, sesion().codigoAnterior];
-      allow read, update, delete: if esDocente();
+        && request.resource.data.codigo in [sesion().codigo, sesion().codigoAnterior]);
+      allow read: if esDocente() || (request.auth != null && resource.data.uid == request.auth.uid);
+      allow update, delete: if esDocente();
     }
 
     // ───────── Recursos para la clase ─────────
@@ -120,17 +121,25 @@ service cloud.firestore {
     // ───────── Sitio del curso ─────────
     function logueado() { return request.auth != null; }
 
-    // Cronograma, unidades y avisos: los ve cualquiera que ingresó; los edita el docente.
+    // Cronograma, unidades, avisos y documentos: los ve cualquiera que ingresó; los edita el docente.
     match /clases/{id}   { allow read: if logueado(); allow write: if esDocente(); }
     match /unidades/{id} { allow read: if logueado(); allow write: if esDocente(); }
     match /avisos/{id}   { allow read: if logueado(); allow write: if esDocente(); }
+    match /curso/{id}    { allow read: if logueado(); allow write: if esDocente(); }
 
     // Ficha de cada estudiante: solo la ve y la edita su dueño (y la lee el docente).
     match /estudiantes/{uid} {
       allow read: if esDocente() || (logueado() && request.auth.uid == uid);
       allow create, update: if logueado() && request.auth.uid == uid
-        && request.resource.data.keys().hasOnly(['vistos','hechos','perfil']);
+        && request.resource.data.keys().hasOnly(['email','nombreGoogle','vistos','hechos','perfil'])
+        && request.resource.data.get('email', '') == request.auth.token.email;
       allow delete: if esDocente();
+    }
+
+    // Notas de los parciales: las carga el docente; cada estudiante ve solo las suyas.
+    match /notas/{uid} {
+      allow read: if esDocente() || (logueado() && request.auth.uid == uid);
+      allow write: if esDocente();
     }
   }
 }

@@ -8,6 +8,7 @@ import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from
 import { CURSO_INFO } from "./curso.js";
 
 export { db, auth, F, CURSO_INFO };
+export const salir = () => signOut(auth);
 
 /* ---------- utilidades ---------- */
 export const $ = s => document.querySelector(s);
@@ -36,13 +37,16 @@ export const ICON = {
 };
 
 /* ---------- encabezado y pie ---------- */
-const NAV_EST = [["Cronograma", "cronograma.html"], ["Materiales", "materiales.html"]];
-const NAV_DOC = [["Asistencia", "docente-asistencia.html"], ["Cronograma", "docente-cronograma.html"], ["Contenidos", "docente-contenidos.html"], ["Recursos", "recursos.html"]];
+const NAV_EST = [["Cronograma", "cronograma.html"], ["Materiales", "materiales.html"], ["Información", "informacion.html"]];
+const NAV_DOC = [["Asistencia", "docente-asistencia.html"], ["Cronograma", "docente-cronograma.html"], ["Contenidos", "docente-contenidos.html"], ["Recursos", "recursos.html"], ["Estudiantes", "docente-estudiantes.html"]];
 
 function iniciales(n){ return String(n || "?").split(/\s+/).filter(Boolean).slice(0, 2).map(p => p[0].toUpperCase()).join(""); }
 function headerHTML(o, user){
   const nav = (o.area === "docente" ? NAV_DOC : NAV_EST).map(([t, h]) => `<a href="${h}"${t === o.activo ? ' aria-current="page"' : ""}>${t}</a>`).join("");
-  const me = user ? `<span class="me">${user.photoURL ? `<img src="${esc(user.photoURL)}" alt="" referrerpolicy="no-referrer">` : `<span class="ini">${esc(iniciales(user.displayName))}</span>`}<button class="out" id="salir" type="button">Salir</button></span>` : "";
+  const av = user ? (user.photoURL ? `<img src="${esc(user.photoURL)}" alt="" referrerpolicy="no-referrer">` : `<span class="ini">${esc(iniciales(user.displayName))}</span>`) : "";
+  const me = !user ? "" : o.area === "docente"
+    ? `<span class="me">${av}<button class="out" id="salir" type="button">Salir</button></span>`
+    : `<a class="me${o.activo === "Perfil" ? " on" : ""}" href="perfil.html"${o.activo === "Perfil" ? ' aria-current="page"' : ""}>${av}Perfil</a>`;
   const extra = o.area === "docente" ? `<a href="index.html" class="small" style="color:var(--muted);text-decoration:underline">Ver como estudiante</a>` : "";
   const brand = o.area === "docente"
     ? `<a class="brand" href="docente.html"><img src="img/uba.png" alt="UBA"><span>Área docente</span></a>`
@@ -61,7 +65,7 @@ let esDocenteCache = null;
 export async function esDocente(){
   if(esDocenteCache !== null) return esDocenteCache;
   try{ await F.getDoc(F.doc(db, "sesiones", "prueba-docente")); esDocenteCache = true; }
-  catch(e){ console.error(e); esDocenteCache = false; }
+  catch(e){ if(e.code !== "permission-denied") console.error(e); esDocenteCache = false; }
   return esDocenteCache;
 }
 
@@ -95,9 +99,20 @@ export function iniciar(o, alListo){
       main.innerHTML = `<div class="card"><h2>Esta sección es solo para docentes</h2><p class="muted">Ingresaste como <b>${esc(user.email)}</b>. Si sos docente del curso, revisá que tu email esté en las reglas de Firebase.</p><a class="btn" href="index.html">Ir al sitio del curso</a></div>`;
       return;
     }
+    if(o.area !== "docente") await registrar(user);
     try{ await alListo(user, main); }
     catch(e){ console.error(e); main.innerHTML = `<div class="card"><h2>No se pudo cargar la página</h2><p class="muted" style="margin:0">${e.code === "permission-denied" ? "Faltan permisos en las reglas de Firebase." : "Revisá tu conexión y recargá la página."}</p></div>`; }
   });
+}
+
+// Deja anotado al estudiante (email y nombre de Google) para la lista del docente. Una vez por sesión.
+async function registrar(user){
+  try{
+    const k = "reg_" + user.uid; if(sessionStorage.getItem(k)) return;
+    if(await esDocente()){ sessionStorage.setItem(k, "1"); return; }
+    await F.setDoc(F.doc(db, "estudiantes", user.uid), { email: user.email || "", nombreGoogle: user.displayName || "" }, { merge: true });
+    sessionStorage.setItem(k, "1");
+  }catch(e){ console.error(e); }
 }
 
 /* ---------- datos ---------- */
@@ -113,6 +128,27 @@ export async function leerUnidades(){
 export async function leerMiDoc(uid){
   const d = await F.getDoc(F.doc(db, "estudiantes", uid));
   return d.exists() ? d.data() : {};
+}
+// Asistencia del estudiante: clases en las que se tomó asistencia y las que tiene presente.
+export async function leerTomadas(){
+  const d = await F.getDoc(F.doc(db, "publico", "asistencia"));
+  return d.exists() ? (d.data().tomadas || {}) : {};
+}
+export async function misPresentes(uid){
+  const s = await F.getDocs(F.query(F.collection(db, "asistencias"), F.where("uid", "==", uid)));
+  const m = {}; s.docs.forEach(d => m[d.data().sesion] = true); return m;
+}
+export function descargarCSV(nombre, filas){
+  const csv = "\ufeff" + filas.map(f => f.map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(";")).join("\r\n");
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+  a.download = nombre; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+export function nombreDe(perfil, user){
+  const p = perfil || {};
+  const n = [p.nombre, p.apellido].filter(Boolean).join(" ");
+  return n || (user && user.displayName) || "";
 }
 export function botonToggle(label, on){
   return `<button class="toggle" type="button" aria-pressed="${on ? "true" : "false"}">${on ? ICON.check : ICON.circle}${label}</button>`;

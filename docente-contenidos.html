@@ -91,9 +91,26 @@ iniciar({ area: "docente", activo: "Contenidos", titulo: "Contenidos", fondo: "i
       </div></details>`;
   }
 
+  const DOCS = [["normas", "Normas del curso"], ["programa", "Programa de la cátedra"], ["cronograma", "Cronograma de clases"], ["tp1", "Consigna del TP n.° 1"], ["tp2", "Consigna del TP n.° 2"], ["modelo", "Modelo de examen"]];
+  let docs = {}; try{ const d = await F.getDoc(F.doc(db, "curso", "documentos")); if(d.exists()) docs = d.data(); }catch(e){}
+  let docsOpen = false;
+  function docsHTML(){
+    return `<details class="u" id="docs"${docsOpen ? " open" : ""}><summary><span class="num" aria-hidden="true">·</span><h2>Documentos del curso</h2></summary>
+      <div class="ub"><div>${DOCS.map(([k, t]) => `<div class="prow"><span class="t">${t}</span><input type="url" data-doc="${k}" value="${esc(docs[k] || "")}" placeholder="Enlace de Google Drive" aria-label="${t}"><span data-dp="${k}">${pill(docs[k])}</span></div>`).join("")}</div>
+      <div class="ufoot"><button class="btn primary" type="button" id="saveDocs">Guardar documentos</button></div></div></details>`;
+  }
   function draw(){
-    main.innerHTML = UNIDADES.map(unidadHTML).join("");
-    main.querySelectorAll("details.u").forEach(det => {
+    main.innerHTML = docsHTML() + UNIDADES.map(unidadHTML).join("");
+    const dd = $("#docs"); dd.addEventListener("toggle", () => docsOpen = dd.open);
+    dd.querySelectorAll("[data-doc]").forEach(i => i.oninput = () => { docs[i.dataset.doc] = i.value.trim(); dd.querySelector(`[data-dp="${i.dataset.doc}"]`).innerHTML = pill(docs[i.dataset.doc]); });
+    $("#saveDocs").onclick = async ev => {
+      if(Object.values(docs).some(u => u && !esUrl(u))){ toast("Hay un enlace que no es válido. Tiene que empezar con https://"); return; }
+      ev.target.disabled = true;
+      try{ await F.setDoc(F.doc(db, "curso", "documentos"), docs); toast("Documentos guardados"); }
+      catch(e){ console.error(e); toast("No se pudo guardar."); }
+      ev.target.disabled = false;
+    };
+    main.querySelectorAll("details.u[data-u]").forEach(det => {
       const u = det.dataset.u, e = estado[u];
       det.addEventListener("toggle", () => det.open ? abiertas.add(u) : abiertas.delete(u));
       det.querySelector('[data-k="nombre"]').oninput = ev => e.nombre = ev.target.value;

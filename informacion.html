@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Información del curso · Administración General</title>
+<link rel="icon" href="img/uba.png">
+<link rel="stylesheet" href="sitio.css">
+<style>
+.top2{display:flex;flex-wrap:wrap;gap:22px;align-items:stretch}
+.ess{flex:1 1 460px;min-width:0;border:2px solid var(--live)}
+.ess .g{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,230px),1fr));gap:16px 20px}
+.ess .g>div{display:flex;gap:12px}
+.ess .k{font-family:var(--serif);font-size:24px;font-weight:700;color:var(--live);line-height:1.1;min-width:62px}
+.ess .g p{margin:0;color:var(--text);font-size:16px}
+.esc{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.esc div{flex:1 1 110px;border-radius:10px;padding:8px 12px}
+.esc b{font-family:var(--serif);font-size:20px;display:block}
+.val{flex:1.15 1 420px;min-width:0;border-radius:16px;padding:22px 26px;background:#DCDFF0 url(img/fondo-lila.jpg) center/cover;display:flex;flex-direction:column}
+.val h2{margin:0 0 6px;font-size:24px}
+.val .in{background:rgba(255,255,255,.86);border-radius:12px;padding:0 18px;margin-top:8px;flex:1}
+.val .v{display:flex;gap:14px;padding:14px 0}
+.val .v+.v{border-top:1px solid rgba(30,37,80,.12)}
+.val .n{font-family:var(--serif);font-size:22px;font-weight:700;color:var(--live-ink);min-width:34px;line-height:1.2}
+.val h3{margin:0 0 4px;font-size:19px;line-height:1.25}
+.val p{margin:0;color:#2A2F55;font-size:16px}
+.docs{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,460px),1fr));gap:12px}
+.doc{display:flex;gap:14px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px 18px;text-decoration:none;color:var(--ink)}
+a.doc:hover{border-color:var(--ink)}
+.doc .ic{width:44px;height:52px;flex:none;border-radius:6px;background:var(--soft);display:flex;align-items:flex-end;justify-content:center;padding-bottom:6px;font-size:11px;font-weight:700;color:var(--live-ink)}
+.doc .t{flex:1;min-width:0;font-weight:700;font-size:18px}
+.doc.off{background:#F6F5F9;color:#6B6F85}
+.doc.off .ic{background:#ECEBF1;color:#8A8DA0}
+.faq details{border-top:1px solid var(--line2)}
+.faq summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:16px;font-size:18px;font-weight:700;padding:16px 0}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary svg{flex:none;transition:transform .2s}
+.faq details[open] summary svg{transform:rotate(180deg)}
+.faq p{margin:-4px 0 16px;color:var(--text)}
+</style>
+</head>
+<body>
+<script type="module">
+import { iniciar, db, F, esc, esUrl } from "./app.js";
+
+const DOCS = [["normas", "Normas del curso"], ["programa", "Programa de la cátedra"], ["cronograma", "Cronograma de clases"], ["tp1", "Consigna del TP n.° 1"], ["tp2", "Consigna del TP n.° 2"], ["modelo", "Modelo de examen"]];
+const FAQ = [
+  ["¿Qué pasa si no llego al 75 % de asistencia?", "Quedás en condición de “ausente” en la materia, aunque hayas aprobado los parciales. Esto vale tanto para las clases presenciales como para las virtuales."],
+  ["¿Puedo usar el recuperatorio para mejorar una nota?", "Sí. El recuperatorio sirve para rendir un parcial desaprobado o uno cuya nota quieras mejorar. Tené en cuenta que su nota reemplaza siempre a la del parcial, aunque sea más baja."],
+  ["¿Cómo se aprueba el trabajo práctico?", "Es grupal y tiene dos partes: un documento escrito y una exposición oral. Se califica como aprobado o reprobado. Si hay que recuperarlo, se corrige con los comentarios de los docentes y se vuelve a entregar en la fecha indicada."],
+  ["¿Cuándo tengo que leer la bibliografía?", "Antes de cada clase. En el cronograma figura qué lectura corresponde a cada encuentro, y las actividades en clase se arman sobre esa lectura."],
+  ["¿Qué nota necesito para promocionar?", "Con 7 o más promocionás. El promedio se redondea para arriba: si entre los dos parciales sumás 13 puntos (por ejemplo, un 6 y un 7), el 6,5 pasa a 7 y promocionás. Con 4 a 6 quedás regular y rendís un examen final. En todos los casos necesitás el 75 % de asistencia y aprobar ambos parciales."],
+  ["¿Qué es la nota concepto?", "Además de los parciales, tenemos en cuenta cómo transitaste la cursada: la asistencia a clase, la participación en las consignas y los trabajos que se destaquen. Todo eso puede mejorar un poco tu nota final. No reemplaza a los parciales: es un reconocimiento al compromiso durante el cuatrimestre."]
+];
+const VALORES = [
+  ["I", "Aprendemos con una mirada integral.", "Incorporamos conocimientos nuevos y desarrollamos también nuestras habilidades sociales, fundamentales en nuestra profesión para generar un impacto positivo en las organizaciones."],
+  ["II", "Formamos nuestro propio criterio profesional.", "Analizamos y cuestionamos los conceptos estudiados, conectándolos con nuestras ideas y experiencias. Mantenemos una mente abierta y reflexiva para desarrollar el pensamiento crítico."],
+  ["III", "Somos las/os protagonistas de nuestro aprendizaje.", "Dejamos las distracciones de lado, escuchamos activamente y construimos un ambiente de participación e intercambio. Aportamos nuestras opiniones y nos permitimos equivocarnos."]
+];
+const CHEV = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5A5F78" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+
+iniciar({ area: "estudiantes", activo: "Información", titulo: "Información del curso" }, async (user, main) => {
+  let docs = {}; try{ const d = await F.getDoc(F.doc(db, "curso", "documentos")); if(d.exists()) docs = d.data(); }catch(e){}
+  main.innerHTML = `
+  <div class="top2">
+    <section class="card ess"><h2 style="margin-bottom:16px">Lo esencial para aprobar</h2>
+      <div class="g">
+        <div><span class="k">75 %</span><span><b>Asistencia mínima</b><p>En clases presenciales y virtuales.</p></span></div>
+        <div><span class="k">2</span><span><b>Parciales</b><p>Unidades I a IV y V a VIII. Hay que aprobar ambos.</p></span></div>
+        <div><span class="k">1</span><span><b>Recuperatorio</b><p>Su nota siempre reemplaza a la del parcial.</p></span></div>
+        <div><span class="k">TP</span><span><b>Trabajo práctico grupal</b><p>Escrito y exposición oral.</p></span></div>
+      </div>
+      <div class="esc"><div style="background:var(--ok-bg)"><b style="color:var(--ok)">7 a 10</b>Promoción</div><div style="background:var(--soft)"><b>4 a 6</b>Final</div><div style="background:var(--bad-bg)"><b style="color:var(--bad)">0 a 3</b>Insuficiente</div></div>
+    </section>
+    <section class="val"><h2>Nuestros valores</h2><div class="in">${VALORES.map(([n, t, d]) => `<div class="v"><span class="n">${n}</span><span><h3>${t}</h3><p>${d}</p></span></div>`).join("")}</div></section>
+  </div>
+  <section><h2 style="margin:0 0 12px;font-size:26px">Documentos</h2><div class="docs">
+    ${DOCS.map(([k, t]) => esUrl(docs[k])
+      ? `<a class="doc" href="${esc(docs[k])}" target="_blank" rel="noopener"><span class="ic">PDF</span><span class="t">${t}</span><b style="color:var(--link)">Abrir</b></a>`
+      : `<div class="doc off" aria-disabled="true"><span class="ic">PDF</span><span class="t">${t}</span><span class="pill na">Aún no disponible</span></div>`).join("")}
+  </div></section>
+  <section class="card faq" style="padding-bottom:8px"><h2 style="font-size:26px;margin-bottom:8px">Preguntas frecuentes</h2>
+    ${FAQ.map(([q, a], i) => `<details${i === 0 ? " open" : ""}><summary>${q}${CHEV}</summary><p>${a}</p></details>`).join("")}
+  </section>`;
+});
+</script>
+</body>
+</html>
