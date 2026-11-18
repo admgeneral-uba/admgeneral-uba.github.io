@@ -60,8 +60,8 @@ function footerHTML(o){
 let esDocenteCache = null;
 export async function esDocente(){
   if(esDocenteCache !== null) return esDocenteCache;
-  try{ await F.getDoc(F.doc(db, "sesiones", "__prueba__")); esDocenteCache = true; }
-  catch(e){ esDocenteCache = false; }
+  try{ await F.getDoc(F.doc(db, "sesiones", "prueba-docente")); esDocenteCache = true; }
+  catch(e){ console.error(e); esDocenteCache = false; }
   return esDocenteCache;
 }
 
