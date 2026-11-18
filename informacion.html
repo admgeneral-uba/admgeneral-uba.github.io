@@ -84,7 +84,8 @@ iniciar({ area: "estudiantes", activo: "Información", titulo: "Información del
   </div></section>
   <section class="card faq" style="padding-bottom:8px"><h2 style="font-size:26px;margin-bottom:8px">Preguntas frecuentes</h2>
     ${FAQ.map(([q, a], i) => `<details${i === 0 ? " open" : ""}><summary>${q}${CHEV}</summary><p>${a}</p></details>`).join("")}
-  </section>`;
+  </section>
+  <div class="row"><a class="btn" href="index.html">Volver al inicio</a></div>`;
 });
 </script>
 </body>

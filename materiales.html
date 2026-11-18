@@ -47,7 +47,8 @@ iniciar({ area: "estudiantes", activo: "Materiales", titulo: "Materiales" }, asy
   }).join("");
 
   main.innerHTML = (bloques || '<div class="card"><p class="empty">Todavía no hay materiales cargados.</p></div>')
-    + (esUrl(CURSO_INFO.driveUrl) && CURSO_INFO.driveUrl !== "https://drive.google.com/" ? `<div class="row"><a class="btn" href="${esc(CURSO_INFO.driveUrl)}" target="_blank" rel="noopener">Carpeta del curso en Drive</a></div>` : "");
+    + (esUrl(CURSO_INFO.driveUrl) && CURSO_INFO.driveUrl !== "https://drive.google.com/" ? `<div class="row"><a class="btn" href="${esc(CURSO_INFO.driveUrl)}" target="_blank" rel="noopener">Carpeta del curso en Drive</a></div>` : "")
+    + '<div class="row"><a class="btn" href="index.html">Volver al inicio</a></div>';
 
   main.querySelectorAll("[data-k]").forEach(w => w.addEventListener("click", async () => {
     const k = w.dataset.k, b = w.querySelector("button"), on = !vistos[k];
