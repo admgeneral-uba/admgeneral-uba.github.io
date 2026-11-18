@@ -7,23 +7,25 @@
 <link rel="icon" href="img/uba.png">
 <link rel="stylesheet" href="sitio.css">
 <style>
-.top2{display:flex;flex-wrap:wrap;gap:22px;align-items:stretch}
-.ess{flex:1 1 460px;min-width:0;border:2px solid var(--live)}
+.top2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:22px;align-items:stretch}
+@media (max-width:860px){.top2{grid-template-columns:1fr}}
+.ess{min-width:0;border:2px solid var(--live)}
 .ess .g{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,230px),1fr));gap:16px 20px}
 .ess .g>div{display:flex;gap:12px}
 .ess .k{font-family:var(--serif);font-size:24px;font-weight:700;color:var(--live);line-height:1.1;min-width:62px}
 .ess .g p{margin:0;color:var(--text);font-size:16px}
 .esc{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
-.esc div{flex:1 1 110px;border-radius:10px;padding:8px 12px}
+.esc div{flex:1 1 80px;border-radius:10px;padding:8px 10px}
 .esc b{font-family:var(--serif);font-size:20px;display:block}
-.val{flex:1.15 1 420px;min-width:0;border-radius:16px;padding:22px 26px;background:#DCDFF0 url(img/fondo-lila.jpg) center/cover;display:flex;flex-direction:column}
+.val{min-width:0;border-radius:16px;padding:22px 30px;background:#EBD3A4 url(img/papiro.jpg) center/cover;box-shadow:inset 0 0 40px rgba(120,80,20,.35);display:flex;flex-direction:column;color:#3B2A12}
 .val h2{margin:0 0 6px;font-size:24px}
-.val .in{background:rgba(255,255,255,.86);border-radius:12px;padding:0 18px;margin-top:8px;flex:1}
-.val .v{display:flex;gap:14px;padding:14px 0}
-.val .v+.v{border-top:1px solid rgba(30,37,80,.12)}
+.val .in{margin-top:4px;flex:1;display:flex;flex-direction:column;justify-content:space-evenly}
+.val .v{display:flex;gap:14px;padding:16px 0}
+.val .v+.v{border-top:1px solid rgba(90,60,20,.22)}
 .val .n{font-family:var(--serif);font-size:22px;font-weight:700;color:var(--live-ink);min-width:34px;line-height:1.2}
-.val h3{margin:0 0 4px;font-size:19px;line-height:1.25}
-.val p{margin:0;color:#2A2F55;font-size:16px}
+.val h3{margin:0 0 6px;font-size:22px;line-height:1.25}
+.val p{margin:0;color:#4A3818;font-size:17.5px;line-height:1.55}
+.val h2,.val h3{color:#3B2A12}
 .docs{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,460px),1fr));gap:12px}
 .doc{display:flex;gap:14px;align-items:center;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px 18px;text-decoration:none;color:var(--ink)}
 a.doc:hover{border-color:var(--ink)}
@@ -72,7 +74,7 @@ iniciar({ area: "estudiantes", activo: "Información", titulo: "Información del
       </div>
       <div class="esc"><div style="background:var(--ok-bg)"><b style="color:var(--ok)">7 a 10</b>Promoción</div><div style="background:var(--soft)"><b>4 a 6</b>Final</div><div style="background:var(--bad-bg)"><b style="color:var(--bad)">0 a 3</b>Insuficiente</div></div>
     </section>
-    <section class="val"><h2>Nuestros valores</h2><div class="in">${VALORES.map(([n, t, d]) => `<div class="v"><span class="n">${n}</span><span><h3>${t}</h3><p>${d}</p></span></div>`).join("")}</div></section>
+    <section class="val"><h2>Nuestros valores</h2><div class="in">${VALORES.map(([n, t, d]) => `<div class="v"><span><h3>${t}</h3><p>${d}</p></span></div>`).join("")}</div></section>
   </div>
   <section><h2 style="margin:0 0 12px;font-size:26px">Documentos</h2><div class="docs">
     ${DOCS.map(([k, t]) => esUrl(docs[k])
