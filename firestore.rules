@@ -141,5 +141,51 @@ service cloud.firestore {
       allow read: if esDocente() || (logueado() && request.auth.uid == uid);
       allow write: if esDocente();
     }
+
+    // ───────── Desafíos ─────────
+    // Test de lectura: una pregunta por día. Se ve desde su fecha; la respuesta correcta, después de responder.
+    match /tests/{tid} {
+      allow read: if esDocente() || (logueado() && resource.data.desde <= request.time);
+      allow write: if esDocente();
+    }
+    match /claves/{tid} {
+      allow read: if esDocente() || (logueado()
+        && exists(/databases/$(database)/documents/respuestasTest/$(tid + '_' + request.auth.uid)));
+      allow write: if esDocente();
+    }
+    match /respuestasTest/{rid} {
+      allow read: if esDocente() || (logueado() && resource.data.uid == request.auth.uid);
+      allow create: if logueado()
+        && request.resource.data.keys().hasOnly(['tid','uid','opcion','hora'])
+        && request.resource.data.uid == request.auth.uid
+        && rid == request.resource.data.tid + '_' + request.auth.uid
+        && request.resource.data.opcion is int
+        && request.resource.data.opcion >= 0 && request.resource.data.opcion <= 3
+        && request.resource.data.hora == request.time
+        && get(/databases/$(database)/documents/tests/$(request.resource.data.tid)).data.desde <= request.time;
+      allow update, delete: if esDocente();
+    }
+
+    // Tercer tiempo: la palabra de la clase se puede jugar cuando termina la clase.
+    match /juegos/{jid} {
+      allow read: if esDocente() || (logueado() && resource.data.desde <= request.time);
+      allow write: if esDocente();
+    }
+    match /jugadas/{rid} {
+      function valida() {
+        return request.resource.data.keys().hasOnly(['juego','uid','intentos','gano','terminado','hora'])
+          && request.resource.data.uid == request.auth.uid
+          && rid == request.resource.data.juego + '_' + request.auth.uid
+          && request.resource.data.intentos is list && request.resource.data.intentos.size() <= 6
+          && request.resource.data.gano is bool && request.resource.data.terminado is bool
+          && request.resource.data.hora == request.time;
+      }
+      allow read: if esDocente() || (logueado() && resource.data.uid == request.auth.uid);
+      allow create: if logueado() && valida();
+      allow update: if logueado() && valida() && resource.data.uid == request.auth.uid
+        && resource.data.terminado == false
+        && request.resource.data.juego == resource.data.juego;
+      allow delete: if esDocente();
+    }
   }
 }

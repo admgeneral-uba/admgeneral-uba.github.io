@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Afirmaciones · Área docente</title>
+<link rel="icon" href="img/uba.png">
+<link rel="stylesheet" href="sitio.css">
+<style>
+.nav2{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.fr{font-family:var(--serif);font-size:clamp(24px,3.2vw,38px);line-height:1.2;margin:10px 0 26px}
+.bars{display:flex;flex-direction:column;gap:12px}
+.b{display:grid;grid-template-columns:minmax(0,230px) minmax(0,1fr) 64px;gap:14px;align-items:center;font-size:18px}
+.b .t{height:34px;background:var(--gray-bg);border-radius:8px;overflow:hidden}
+.b .t i{display:block;height:100%;border-radius:8px;transition:width .6s ease}
+.b .p{font-weight:700;text-align:right}
+.prom{margin-top:22px;font-size:20px}
+.prom b{font-family:var(--serif);font-size:34px}
+@media (max-width:640px){.b{grid-template-columns:1fr 54px}.b .l{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<script type="module">
+import { iniciar, db, F, $ } from "./app.js";
+const FRASES = ["Aspiro a tener un rol de alta jerarquía en una organización.", "Lo que más me interesa es ganar dinero.", "Los profesionales de las Ciencias Económicas debemos garantizar que las organizaciones tengan un impacto social positivo.", "Los profesionales de las Ciencias Económicas tenemos responsabilidad por el impacto ambiental de las organizaciones.", "Considero que tengo excelentes habilidades de liderazgo.", "Me gusta socializar y vincularme con otras personas.", "Me siento cómodo/a si tengo que hablar en público (por ejemplo, pasar al frente en el aula)."];
+const LK = ["Nada de acuerdo", "Poco de acuerdo", "Ni de acuerdo ni en desacuerdo", "Bastante de acuerdo", "Totalmente de acuerdo"];
+const COL = ["#B3413A", "#D98A86", "#8A8DA0", "#5FA884", "#1E7A55"];
+
+iniciar({ area: "docente", activo: "Recursos", titulo: "¿Qué tan de acuerdo estamos?", fondo: "intenso" }, async (user, main) => {
+  const est = await F.getDocs(F.collection(db, "estudiantes"));
+  const R = FRASES.map((_, i) => { const c = [0, 0, 0, 0, 0]; est.docs.forEach(d => { const v = ((d.data().perfil || {}).likert || {})[i]; if(v >= 1 && v <= 5) c[v - 1]++; }); return c; });
+  let k = 0;
+  function draw(){
+    const c = R[k], n = c.reduce((a, b) => a + b, 0), prom = n ? (c.reduce((a, v, i) => a + v * (i + 1), 0) / n) : 0;
+    main.innerHTML = `<section class="card"><div class="nav2"><span class="kick">Afirmación ${k + 1} de ${FRASES.length}</span>
+      <div class="row"><button class="btn small" id="ant" type="button"${k === 0 ? " disabled" : ""}>Anterior</button><button class="btn small primary" id="sig" type="button"${k === FRASES.length - 1 ? " disabled" : ""}>Siguiente</button></div></div>
+      <p class="fr">${FRASES[k]}</p>
+      ${n ? `<div class="bars">${c.map((v, i) => `<div class="b"><span class="l">${i + 1} · ${LK[i]}</span><div class="t"><i style="width:0;background:${COL[i]}" data-w="${v / n * 100}"></i></div><span class="p">${Math.round(v / n * 100)} %</span></div>`).join("")}</div>
+      <p class="prom">Promedio <b>${prom.toFixed(1).replace(".", ",")}</b> · ${n} respuestas</p>` : '<p class="empty">Todavía no hay respuestas.</p>'}</section>`;
+    requestAnimationFrame(() => main.querySelectorAll("[data-w]").forEach(i => i.style.width = i.dataset.w + "%"));
+    $("#ant").onclick = () => { k--; draw(); }; $("#sig").onclick = () => { k++; draw(); };
+  }
+  document.addEventListener("keydown", e => { if(e.key === "ArrowRight" && k < FRASES.length - 1){ k++; draw(); } if(e.key === "ArrowLeft" && k > 0){ k--; draw(); } });
+  draw();
+});
+</script>
+</body>
+</html>

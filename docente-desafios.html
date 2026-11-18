@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Desafíos · Área docente</title>
+<link rel="icon" href="img/uba.png">
+<link rel="stylesheet" href="sitio.css">
+<style>
+details.u{background:var(--paper);border:1px solid var(--line);border-radius:16px}
+details.u>summary{list-style:none;cursor:pointer;padding:16px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+details.u>summary::-webkit-details-marker{display:none}
+details.u>summary h2{margin:0;font-size:20px;flex:1;min-width:200px}
+details.u>summary .num{font-family:var(--serif);font-weight:700;font-size:18px;color:var(--live-ink);min-width:70px}
+details.u[open]>summary{border-bottom:1px solid var(--line)}
+.ub{padding:18px 22px 22px;display:flex;flex-direction:column;gap:22px}
+.ub h3{margin:0 0 10px;font-size:18px}
+.q{border:1px solid var(--line2);border-radius:12px;padding:14px;margin-bottom:12px;display:flex;flex-direction:column;gap:8px}
+.q .hd{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.q .hd b{color:var(--live-ink)}
+.op{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;align-items:center}
+.op input[type=radio]{width:20px;height:20px;accent-color:var(--ok)}
+.extra{color:var(--muted);font-size:15px}
+.del{font:inherit;font-size:20px;line-height:1;color:var(--muted);background:none;border:0;cursor:pointer;padding:4px 8px}
+.del:hover{color:var(--bad)}
+.ufoot{display:flex;justify-content:flex-end}
+.pal{display:grid;grid-template-columns:minmax(0,240px) minmax(0,1fr);gap:10px}
+@media (max-width:700px){.pal{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<script type="module">
+import { iniciar, db, F, esc, toast, $, leerClases, corta, larga, diasDeTest, inicioDia, finClase, normal, hoyISO } from "./app.js";
+
+iniciar({ area: "docente", activo: "Desafíos", titulo: "Desafíos", fondo: "intenso" }, async (user, main) => {
+  const clases = await leerClases();
+  if(!clases.length){ main.innerHTML = '<div class="card"><p class="empty">Primero cargá el cronograma.</p></div>'; return; }
+  const [ts, ks, js] = await Promise.all([F.getDocs(F.collection(db, "tests")), F.getDocs(F.collection(db, "claves")), F.getDocs(F.collection(db, "juegos"))]);
+  const T = {}; ts.docs.forEach(d => T[d.id] = d.data());
+  const K = {}; ks.docs.forEach(d => K[d.id] = d.data());
+  const J = {}; js.docs.forEach(d => J[d.id] = d.data());
+  const hoy = hoyISO();
+  const E = clases.map((c, i) => {
+    const dias = diasDeTest(clases, i);
+    const preguntas = dias.filter(d => T[d] && T[d].clase === c.id).map(d => ({ pregunta: T[d].pregunta, opciones: [...T[d].opciones], correcta: K[d] ? K[d].correcta : 0, explicacion: K[d] ? K[d].explicacion || "" : "" }));
+    return { c, dias, preguntas, palabra: J[c.id] ? J[c.id].palabra : "", pista: J[c.id] ? J[c.id].pista || "" : "" };
+  });
+  const abiertas = new Set([E.findIndex(e => e.c.fecha >= hoy)].filter(i => i >= 0));
+
+  function qHTML(e, i, q, j){
+    const dia = e.dias[j];
+    return `<div class="q"><div class="hd"><span>${dia ? `<b>${esc(larga(dia))}</b>` : '<span class="pill bad">Sobra: no hay día para esta pregunta</span>'}</span><button class="del" type="button" data-dq="${i}:${j}" aria-label="Quitar pregunta" title="Quitar">×</button></div>
+      <textarea rows="2" data-q="${i}:${j}" data-f="pregunta" placeholder="Pregunta" aria-label="Pregunta">${esc(q.pregunta)}</textarea>
+      ${[0, 1, 2, 3].map(k => `<label class="op"><input type="radio" name="ok-${i}-${j}" value="${k}"${q.correcta === k ? " checked" : ""} data-ok="${i}:${j}" aria-label="Respuesta correcta"><input type="text" data-q="${i}:${j}" data-o="${k}" value="${esc(q.opciones[k] || "")}" placeholder="Opción ${"ABCD"[k]}" aria-label="Opción ${"ABCD"[k]}"></label>`).join("")}
+      <input type="text" data-q="${i}:${j}" data-f="explicacion" value="${esc(q.explicacion)}" placeholder="Explicación (se muestra después de responder)" aria-label="Explicación"></div>`;
+  }
+  function claseHTML(e, i){
+    const n = e.preguntas.length;
+    return `<details class="u" data-i="${i}"${abiertas.has(i) ? " open" : ""}><summary><span class="num">Clase ${e.c.n}</span><h2>${esc(e.c.titulo)}</h2>
+      <span class="pill ${n >= e.dias.length ? "ok" : n ? "na" : "na"}">${n} de ${e.dias.length} preguntas</span><span class="pill ${e.palabra ? "ok" : "na"}">${e.palabra ? "Palabra cargada" : "Sin palabra"}</span></summary>
+      <div class="ub">
+        <div><h3>Test de lectura</h3><p class="extra" style="margin:-4px 0 12px">Una pregunta por día, del ${esc(corta(e.dias[0]))} al ${esc(corta(e.dias[e.dias.length - 1]))}.</p>
+          ${e.preguntas.map((q, j) => qHTML(e, i, q, j)).join("")}
+          <button class="btn small" type="button" data-addq="${i}">Agregar pregunta</button></div>
+        <div><h3>Tercer tiempo</h3><div class="pal">
+          <input type="text" data-pal="${i}" value="${esc(e.palabra)}" maxlength="10" placeholder="Palabra de la clase" aria-label="Palabra de la clase" style="text-transform:uppercase;font-weight:700;letter-spacing:.1em">
+          <input type="text" data-pis="${i}" value="${esc(e.pista)}" maxlength="120" placeholder="Pista (se ve al terminar)" aria-label="Pista"></div></div>
+        <div class="ufoot"><button class="btn primary" type="button" data-sv="${i}">Guardar clase ${e.c.n}</button></div>
+      </div></details>`;
+  }
+  function draw(){
+    main.innerHTML = E.map(claseHTML).join("");
+    main.querySelectorAll("details.u").forEach(d => d.addEventListener("toggle", () => d.open ? abiertas.add(+d.dataset.i) : abiertas.delete(+d.dataset.i)));
+    const qq = s => { const [i, j] = s.split(":").map(Number); return E[i].preguntas[j]; };
+    main.querySelectorAll("[data-q]").forEach(el => el.oninput = () => { const q = qq(el.dataset.q); if(el.dataset.o !== undefined) q.opciones[+el.dataset.o] = el.value; else q[el.dataset.f] = el.value; });
+    main.querySelectorAll("[data-ok]").forEach(el => el.onchange = () => qq(el.dataset.ok).correcta = +el.value);
+    main.querySelectorAll("[data-dq]").forEach(b => b.onclick = () => { const [i, j] = b.dataset.dq.split(":").map(Number); E[i].preguntas.splice(j, 1); draw(); });
+    main.querySelectorAll("[data-addq]").forEach(b => b.onclick = () => { E[+b.dataset.addq].preguntas.push({ pregunta: "", opciones: ["", "", "", ""], correcta: 0, explicacion: "" }); draw(); });
+    main.querySelectorAll("[data-pal]").forEach(el => el.oninput = () => E[+el.dataset.pal].palabra = el.value);
+    main.querySelectorAll("[data-pis]").forEach(el => el.oninput = () => E[+el.dataset.pis].pista = el.value);
+    main.querySelectorAll("[data-sv]").forEach(b => b.onclick = () => guardar(+b.dataset.sv, b));
+  }
+  async function guardar(i, btn){
+    const e = E[i];
+    const qs = e.preguntas.filter(q => q.pregunta.trim());
+    if(qs.some(q => q.opciones.some(o => !String(o).trim()))){ toast("Completá las 4 opciones de cada pregunta."); return; }
+    if(qs.length > e.dias.length){ toast(`Hay ${qs.length} preguntas y ${e.dias.length} días. Quitá las que sobran.`); return; }
+    const pal = normal(e.palabra);
+    if(e.palabra.trim() && (pal.length < 4 || pal.length > 10)){ toast("La palabra tiene que tener entre 4 y 10 letras."); return; }
+    btn.disabled = true;
+    try{
+      const b = F.writeBatch(db);
+      e.dias.forEach((dia, j) => {
+        const q = qs[j];
+        if(q){
+          b.set(F.doc(db, "tests", dia), { clase: e.c.id, n: e.c.n, pregunta: q.pregunta.trim(), opciones: q.opciones.map(o => String(o).trim()), desde: F.Timestamp.fromDate(inicioDia(dia)) });
+          b.set(F.doc(db, "claves", dia), { correcta: q.correcta, explicacion: (q.explicacion || "").trim() });
+        }else if(T[dia]){ b.delete(F.doc(db, "tests", dia)); b.delete(F.doc(db, "claves", dia)); }
+      });
+      if(pal) b.set(F.doc(db, "juegos", e.c.id), { palabra: pal, pista: e.pista.trim(), n: e.c.n, titulo: e.c.titulo, desde: F.Timestamp.fromDate(finClase(e.c.fecha)) });
+      else if(J[e.c.id]) b.delete(F.doc(db, "juegos", e.c.id));
+      await b.commit();
+      e.dias.forEach((dia, j) => { if(qs[j]) T[dia] = { clase: e.c.id }; else delete T[dia]; });
+      if(pal) J[e.c.id] = { palabra: pal }; else delete J[e.c.id];
+      e.preguntas = qs; e.palabra = pal;
+      toast(`Clase ${e.c.n} guardada`); draw();
+    }catch(err){ console.error(err); toast("No se pudo guardar."); btn.disabled = false; }
+  }
+  draw();
+});
+</script>
+</body>
+</html>

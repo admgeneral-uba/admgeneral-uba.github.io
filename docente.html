@@ -25,7 +25,7 @@
 </head>
 <body>
 <script type="module">
-import { iniciar, db, F, esc, toast, $, leerClases, leerTomadas, larga, hoyISO, esUrl, CURSO_INFO } from "./app.js";
+import { iniciar, db, F, esc, toast, $, leerClases, leerTomadas, larga, hoyISO, esUrl, finClase, CURSO_INFO } from "./app.js";
 
 iniciar({ area: "docente", activo: "", titulo: "Hola, Nicolás", fondo: "intenso", grande: true }, async (user, main) => {
   const nom = (user.displayName || "").split(" ")[0]; if(nom) document.querySelector(".hero h1").textContent = "Hola, " + nom;
@@ -40,6 +40,9 @@ iniciar({ area: "docente", activo: "", titulo: "Hola, Nicolás", fondo: "intenso
   let avisos = avs.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.orden || 0) - (b.orden || 0));
   const hechos = id => est.docs.filter(d => (d.data().hechos || {})[id]).length;
   let editando = null;
+  const rHoy = (await F.getDocs(F.query(F.collection(db, "respuestasTest"), F.where("tid", "==", hoy)))).size;
+  const ult = clases.filter(c => finClase(c.fecha).getTime() <= Date.now()).pop();
+  const jug = ult ? (await F.getDocs(F.query(F.collection(db, "jugadas"), F.where("juego", "==", ult.id)))).size : 0;
 
   function draw(){
     main.innerHTML = `
@@ -51,7 +54,8 @@ iniciar({ area: "docente", activo: "", titulo: "Hola, Nicolás", fondo: "intenso
       <div><b>${N}</b>Estudiantes</div>
       <div><b>${prom === null ? "—" : prom + " %"}</b>Asistencia promedio</div>
       <div><b>${prom === null ? "—" : bajo}</b>Debajo del 75 %</div>
-      <div><b>${tom.length}</b>Clases con asistencia</div></div></section>
+      <div><b>${rHoy}</b>Test de lectura de hoy</div>
+      <div><b>${jug}</b>Jugaron el Tercer tiempo${ult ? " de la clase " + ult.n : ""}</div></div></section>
     <section class="card"><div class="row between" style="margin-bottom:6px"><h2 style="margin:0">Consignas, tareas y avisos</h2><button class="btn small" id="nuevo" type="button">Nuevo aviso</button></div>
       ${editando === "nuevo" ? form({}) : ""}
       ${avisos.length || editando ? avisos.map(a => editando === a.id ? form(a) : `<div class="av"><div><b>${esc(a.titulo)}</b>${a.url ? ` · <a href="${esc(a.url)}" target="_blank" rel="noopener">enlace</a>` : ""}</div>

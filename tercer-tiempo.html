@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tercer tiempo · Administración General</title>
+<link rel="icon" href="img/uba.png">
+<link rel="stylesheet" href="sitio.css">
+<style>
+.game{max-width:560px;margin:0 auto;width:100%;display:flex;flex-direction:column;align-items:center;gap:18px}
+.game h2{margin:0;text-align:center}
+.grid6{display:grid;gap:6px}
+.fila{display:grid;gap:6px}
+.cel{width:min(13vw,56px);aspect-ratio:1;border:2px solid var(--line);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-weight:700;font-size:min(7vw,28px);background:#fff;text-transform:uppercase}
+.cel.lleno{border-color:#9C98B5}
+.cel.v{background:var(--ok);border-color:var(--ok);color:#fff}
+.cel.a{background:#C9A227;border-color:#C9A227;color:#fff}
+.cel.g{background:#8A8DA0;border-color:#8A8DA0;color:#fff}
+.cel.flip{animation:flip .45s ease both}
+@keyframes flip{0%{transform:rotateX(0)}50%{transform:rotateX(90deg)}100%{transform:rotateX(0)}}
+.fila.shake{animation:sh .35s}
+@keyframes sh{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+@media (prefers-reduced-motion:reduce){.cel.flip,.fila.shake{animation:none}}
+.kb{display:flex;flex-direction:column;gap:6px;width:100%}
+.kb div{display:flex;gap:5px;justify-content:center}
+.kb button{font:inherit;font-weight:700;flex:1;max-width:44px;height:52px;border-radius:8px;border:0;background:#E4E1EF;color:var(--ink);cursor:pointer;padding:0}
+.kb button.w{max-width:76px;font-size:14px}
+.kb button.v{background:var(--ok);color:#fff}
+.kb button.a{background:#C9A227;color:#fff}
+.kb button.g{background:#8A8DA0;color:#fff}
+.msg{min-height:1.6em;font-weight:700;text-align:center}
+.fin{background:var(--soft);border-radius:14px;padding:16px 20px;text-align:center;width:100%}
+.fin b{font-family:var(--serif);font-size:24px;letter-spacing:.08em}
+</style>
+</head>
+<body>
+<script type="module">
+import { iniciar, db, F, esc, $, leerClases, finClase, normal } from "./app.js";
+
+iniciar({ area: "estudiantes", activo: "", titulo: "Tercer tiempo" }, async (user, main) => {
+  const clases = await leerClases(), ahora = Date.now();
+  const pasadas = clases.filter(c => finClase(c.fecha).getTime() <= ahora).reverse();
+  let juego = null, jid = null;
+  for(const c of pasadas.slice(0, 3)){
+    try{ const d = await F.getDoc(F.doc(db, "juegos", c.id)); if(d.exists()){ juego = d.data(); jid = c.id; break; } }catch(e){}
+  }
+  if(!juego){ main.innerHTML = '<div class="card game"><h2>Todavía no hay juego</h2><p class="empty">El juego de cada clase se habilita cuando termina la clase.</p><a class="btn" href="index.html">Volver al inicio</a></div>'; return; }
+
+  const P = juego.palabra, L = P.length, rid = jid + "_" + user.uid;
+  let intentos = [], terminado = false, gano = false, actual = "";
+  try{ const d = await F.getDoc(F.doc(db, "jugadas", rid)); if(d.exists()){ intentos = d.data().intentos || []; terminado = d.data().terminado; gano = d.data().gano; } }catch(e){}
+
+  function evaluar(g){
+    const r = Array(L).fill("g"), resto = {};
+    for(let i = 0; i < L; i++){ if(g[i] === P[i]) r[i] = "v"; else resto[P[i]] = (resto[P[i]] || 0) + 1; }
+    for(let i = 0; i < L; i++){ if(r[i] !== "v" && resto[g[i]]){ r[i] = "a"; resto[g[i]]--; } }
+    return r;
+  }
+  const FILAS = ["QWERTYUIOP", "ASDFGHJKLÑ", "ZXCVBNM"];
+  main.innerHTML = `<div class="card game"><h2>Clase ${juego.n}: ${esc(juego.titulo)}</h2>
+    <div class="grid6" id="g"></div><div class="msg" id="msg" role="status"></div><div id="fin" style="width:100%"></div>
+    <div class="kb" id="kb">${FILAS.map((f, i) => `<div>${i === 2 ? '<button class="w" data-k="ENTER" type="button">Enviar</button>' : ""}${[...f].map(k => `<button data-k="${k}" type="button">${k}</button>`).join("")}${i === 2 ? '<button class="w" data-k="DEL" type="button" aria-label="Borrar">⌫</button>' : ""}</div>`).join("")}</div></div>`;
+
+  function pintar(anim){
+    const est = {};
+    $("#g").innerHTML = Array.from({ length: 6 }, (_, f) => {
+      const g = intentos[f], ev = g ? evaluar(g) : null, txt = g || (f === intentos.length && !terminado ? actual : "");
+      if(ev) [...g].forEach((ch, i) => { const o = { v: 3, a: 2, g: 1 }; if(!est[ch] || o[ev[i]] > o[est[ch]]) est[ch] = ev[i]; });
+      return `<div class="fila" id="f${f}" style="grid-template-columns:repeat(${L},auto)">${Array.from({ length: L }, (_, i) => `<span class="cel ${ev ? ev[i] : txt[i] ? "lleno" : ""}${ev && anim === f ? " flip" : ""}"${ev && anim === f ? ` style="animation-delay:${i * .12}s"` : ""}>${txt[i] || ""}</span>`).join("")}</div>`;
+    }).join("");
+    $("#kb").querySelectorAll("[data-k]").forEach(b => { b.className = (b.classList.contains("w") ? "w " : "") + (est[b.dataset.k] || ""); });
+    if(terminado){
+      $("#kb").hidden = true;
+      $("#fin").innerHTML = `<div class="fin">${gano ? `<p style="margin:0 0 6px;font-size:20px;font-weight:700">¡Bien! La adivinaste en ${intentos.length} ${intentos.length === 1 ? "intento" : "intentos"}.</p>` : `<p style="margin:0 0 6px">La palabra era</p><b>${esc(P)}</b>`}
+        ${juego.pista ? `<p style="margin:10px 0 0">${esc(juego.pista)}</p>` : ""}<div class="row" style="justify-content:center;margin-top:14px"><a class="btn" href="index.html">Volver al inicio</a></div></div>`;
+    }
+  }
+  async function guardar(){
+    try{ await F.setDoc(F.doc(db, "jugadas", rid), { juego: jid, uid: user.uid, intentos, gano, terminado, hora: F.serverTimestamp() }); }
+    catch(e){ console.error(e); $("#msg").textContent = "No se pudo guardar el intento."; }
+  }
+  async function tecla(k){
+    if(terminado) return;
+    $("#msg").textContent = "";
+    if(k === "DEL"){ actual = actual.slice(0, -1); return pintar(); }
+    if(k === "ENTER"){
+      if(actual.length < L){ $("#msg").textContent = `La palabra tiene ${L} letras.`; const f = $("#f" + intentos.length); f.classList.remove("shake"); f.offsetWidth; f.classList.add("shake"); return; }
+      intentos.push(actual); actual = "";
+      gano = intentos[intentos.length - 1] === P; terminado = gano || intentos.length >= 6;
+      pintar(intentos.length - 1); await guardar(); return;
+    }
+    if(/^[A-ZÑ]$/.test(k) && actual.length < L){ actual += k; pintar(); }
+  }
+  $("#kb").addEventListener("click", e => { const b = e.target.closest("[data-k]"); if(b) tecla(b.dataset.k); });
+  document.addEventListener("keydown", e => {
+    if(e.ctrlKey || e.metaKey || e.altKey) return;
+    if(e.key === "Enter") tecla("ENTER"); else if(e.key === "Backspace") tecla("DEL");
+    else { const k = normal(e.key); if(k.length === 1 || e.key.toUpperCase() === "Ñ") tecla(e.key.toUpperCase() === "Ñ" ? "Ñ" : k); }
+  });
+  pintar();
+});
+</script>
+</body>
+</html>

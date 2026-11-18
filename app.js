@@ -38,7 +38,7 @@ export const ICON = {
 
 /* ---------- encabezado y pie ---------- */
 const NAV_EST = [["Cronograma", "cronograma.html"], ["Materiales", "materiales.html"], ["Información", "informacion.html"]];
-const NAV_DOC = [["Asistencia", "docente-asistencia.html"], ["Cronograma", "docente-cronograma.html"], ["Contenidos", "docente-contenidos.html"], ["Recursos", "recursos.html"], ["Estudiantes", "docente-estudiantes.html"]];
+const NAV_DOC = [["Asistencia", "docente-asistencia.html"], ["Cronograma", "docente-cronograma.html"], ["Contenidos", "docente-contenidos.html"], ["Desafíos", "docente-desafios.html"], ["Recursos", "recursos.html"], ["Estudiantes", "docente-estudiantes.html"]];
 
 function iniciales(n){ return String(n || "?").split(/\s+/).filter(Boolean).slice(0, 2).map(p => p[0].toUpperCase()).join(""); }
 function headerHTML(o, user){
@@ -145,6 +145,32 @@ export function descargarCSV(nombre, filas){
   a.download = nombre; document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
+/* ---------- desafíos ---------- */
+// Días en que se publica una pregunta del test de lectura de cada clase:
+// desde el día siguiente a la clase anterior hasta el día de la clase.
+export function diasDeTest(clases, i){
+  const c = clases[i], fin = aFecha(c.fecha);
+  const ini = i > 0 ? aFecha(clases[i - 1].fecha) : new Date(fin.getTime() - 4 * 864e5);
+  const out = []; for(let d = new Date(ini.getTime() + 864e5); d <= fin; d = new Date(d.getTime() + 864e5)) out.push(iso(d));
+  return out;
+}
+// Hora argentina (UTC-3, sin horario de verano).
+export const inicioDia = isoD => new Date(isoD + "T00:00:00-03:00");
+export const finClase = isoD => new Date(isoD + "T" + (CURSO_INFO.horaFin || "09:00") + ":00-03:00");
+export const normal = s => String(s || "").toUpperCase().normalize("NFD").replace(/N\u0303/g, "Ñ").replace(/[\u0300-\u036f]/g, "").replace(/[^A-ZÑ]/g, "");
+export async function misDesafios(uid){
+  const [r, j] = await Promise.all([
+    F.getDocs(F.query(F.collection(db, "respuestasTest"), F.where("uid", "==", uid))),
+    F.getDocs(F.query(F.collection(db, "jugadas"), F.where("uid", "==", uid)))]);
+  return { tests: r.docs.map(d => d.data()), jugadas: j.docs.map(d => d.data()) };
+}
+export function racha(tests){
+  const set = new Set(tests.map(t => t.tid)); let d = new Date(), n = 0;
+  if(!set.has(iso(d))) d = new Date(d.getTime() - 864e5);
+  while(set.has(iso(d))){ n++; d = new Date(d.getTime() - 864e5); }
+  return n;
+}
+
 export function nombreDe(perfil, user){
   const p = perfil || {};
   const n = [p.nombre, p.apellido].filter(Boolean).join(" ");

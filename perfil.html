@@ -49,7 +49,7 @@
 </head>
 <body>
 <script type="module">
-import { iniciar, db, F, esc, toast, $, leerClases, leerMiDoc, leerTomadas, misPresentes, salir } from "./app.js";
+import { iniciar, db, F, esc, toast, $, leerClases, leerMiDoc, leerTomadas, misPresentes, misDesafios, salir } from "./app.js";
 
 const CARRERAS = ["Contador Público", "Lic. en Administración", "Lic. en Economía", "Lic. en Sistemas de Información", "Actuario"];
 const ANTIG = ["Menos de 6 meses", "6 meses a 1 año", "1 a 3 años", "Más de 3 años"];
@@ -58,7 +58,8 @@ const LK = ["Nada de acuerdo", "Poco de acuerdo", "Ni de acuerdo ni en desacuerd
 const CHEV = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
 
 iniciar({ area: "estudiantes", activo: "Perfil", titulo: "Perfil", fondo: "rosa" }, async (user, main) => {
-  const [clases, mio, tomadas, pres] = await Promise.all([leerClases(), leerMiDoc(user.uid), leerTomadas(), misPresentes(user.uid)]);
+  const [clases, mio, tomadas, pres, des] = await Promise.all([leerClases(), leerMiDoc(user.uid), leerTomadas(), misPresentes(user.uid), misDesafios(user.uid).catch(() => ({ tests: [], jugadas: [] }))]);
+  const nDes = des.tests.length + des.jugadas.filter(j => j.terminado).length;
   let notas = {}; try{ const n = await F.getDoc(F.doc(db, "notas", user.uid)); if(n.exists()) notas = n.data(); }catch(e){}
   const P = { ...(mio.perfil || {}) };
   P.bloques = { ...(P.bloques || {}) }; P.likert = { ...(P.likert || {}) };
@@ -70,7 +71,7 @@ iniciar({ area: "estudiantes", activo: "Perfil", titulo: "Perfil", fondo: "rosa"
   const pct = tom.length ? Math.round(np / tom.length * 100) : null;
   const nota = v => v === undefined || v === null || v === "" ? '<span class="pill na">Aún no disponible</span>' : `<b>${esc(v)}</b>`;
   const recorrido = `<section class="card"><h2>Mi recorrido</h2>
-    <div class="stats"><div><b>${pct === null ? "—" : pct + " %"}</b><span>Asistencia${tom.length ? ` (${np} de ${tom.length})` : ""}</span></div><div><b>${vistos}</b><span>Contenidos vistos</span></div></div>
+    <div class="stats"><div><b>${pct === null ? "—" : pct + " %"}</b><span>Asistencia${tom.length ? ` (${np} de ${tom.length})` : ""}</span></div><div><b>${nDes}</b><span>Desafíos completados</span></div><div><b>${vistos}</b><span>Contenidos vistos</span></div></div>
     <div class="dots">${clases.map(c => `<span class="${tomadas[c.id] ? (pres[c.id] ? "p" : "a") : ""}" title="Clase ${c.n}">${c.n}</span>`).join("")}</div>
     <div class="notas"><div><span>Nota 1.° parcial</span>${nota(notas.parcial1)}</div><div><span>Nota 2.° parcial</span>${nota(notas.parcial2)}</div></div></section>`;
 

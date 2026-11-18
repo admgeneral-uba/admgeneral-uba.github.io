@@ -28,11 +28,31 @@
 .av:first-child{border-top:0;padding-top:0}
 .av.done>span:first-child{color:var(--muted)}
 .rec p{margin:2px 0 0;color:var(--text);font-size:16px}
+.duo{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:24px}
+.duo .game{background:var(--paper);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.gh{background:#E9B5D0 url(img/fondo-intenso.jpg) center/cover;padding:14px 22px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+.gh b{font-family:var(--serif);font-size:22px;background:rgba(255,255,255,.85);border-radius:8px;padding:2px 10px}
+.gh .pill,.gh .muted{background:rgba(255,255,255,.85)}
+.gh .muted{border-radius:6px;padding:3px 8px}
+.gb{padding:18px 22px 22px}
+.gb .q{margin:0 0 12px;font-size:18px;font-weight:700}
+.opt{display:flex;gap:10px;align-items:center;width:100%;text-align:left;font:inherit;background:#fff;border:1px solid var(--field);border-radius:10px;padding:10px 12px;margin-bottom:8px;cursor:pointer;color:var(--ink)}
+.opt span{width:28px;height:28px;flex:none;border-radius:7px;background:var(--soft);display:flex;align-items:center;justify-content:center;font-weight:700}
+.opt:not(:disabled):hover{border-color:var(--ink)}
+.opt:disabled{cursor:default}
+.opt.ok{background:var(--ok-bg);border-color:var(--ok)}
+.opt.ok span{background:var(--ok);color:#fff}
+.opt.bad{background:var(--bad-bg);border-color:var(--bad)}
+.opt.bad span{background:var(--bad);color:#fff}
+.res{margin:6px 0 0;font-weight:700}
+.res.ok{color:var(--ok)}.res.bad{color:var(--bad)}
+.mini{display:grid;gap:6px;max-width:340px}
+.mini span{aspect-ratio:1;border:2px solid var(--line);border-radius:7px}
 </style>
 </head>
 <body>
 <script type="module">
-import { iniciar, db, F, esc, toast, leerClases, leerUnidades, leerMiDoc, larga, hoyISO, esUrl, botonToggle, ICON, CURSO_INFO } from "./app.js";
+import { iniciar, db, F, esc, toast, leerClases, leerUnidades, leerMiDoc, larga, hoyISO, esUrl, botonToggle, ICON, CURSO_INFO, finClase, misDesafios, racha } from "./app.js";
 
 iniciar({ area: "estudiantes", activo: "", titulo: CURSO_INFO.nombre, subtitulo: CURSO_INFO.subtitulo, grande: true }, async (user, main) => {
   const [clases, unidades, mio, avs] = await Promise.all([leerClases(), leerUnidades(), leerMiDoc(user.uid), F.getDocs(F.collection(db, "avisos"))]);
@@ -59,7 +79,9 @@ iniciar({ area: "estudiantes", activo: "", titulo: CURSO_INFO.nombre, subtitulo:
         ${u && u.recomendaciones && u.recomendaciones.length ? `<div class="card"><h2>Recomendaciones</h2><div class="rec">${u.recomendaciones.map(r => `<div>${esUrl(r.url) ? `<a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.titulo)}</a>` : `<b>${esc(r.titulo)}</b>`}${r.descripcion ? `<p>${esc(r.descripcion)}</p>` : ""}</div>`).join("")}</div></div>` : ""}
         <div class="card"><h2>Materiales</h2><div class="row"><a class="btn primary" href="materiales.html">Ver lecturas y presentaciones</a><a class="btn" href="cronograma.html">Cronograma</a></div></div>
       </div>
-    </div>`;
+    </div>
+    <div class="duo"><section class="game" id="test" hidden></section><section class="game" id="tt" hidden></section></div>`;
+  desafios(user, clases, hoy);
 
   main.querySelectorAll("[data-av]").forEach(w => w.addEventListener("click", async () => {
     const k = w.dataset.av, b = w.querySelector("button"), on = !hechos[k];
@@ -80,6 +102,48 @@ iniciar({ area: "estudiantes", activo: "", titulo: CURSO_INFO.nombre, subtitulo:
   F.onSnapshot(F.doc(db, "publico", "actual"), s => { asis = s.data(); pintarVivo(); }, () => {});
   F.onSnapshot(F.doc(db, "publico", "dinamica"), s => { din = s.data(); pintarVivo(); }, () => {});
 });
+
+// ----- Test de lectura y Tercer tiempo -----
+async function desafios(user, clases, hoy){
+  const mis = await misDesafios(user.uid).catch(() => ({ tests: [], jugadas: [] }));
+  // Test de lectura
+  let t = null; try{ const d = await F.getDoc(F.doc(db, "tests", hoy)); if(d.exists()) t = d.data(); }catch(e){}
+  const box = document.getElementById("test");
+  if(t){
+    box.hidden = false;
+    const previa = mis.tests.find(x => x.tid === hoy);
+    const head = () => `<div class="gh"><b>Test de lectura</b>${racha(mis.tests) > 1 ? `<span class="pill ok">Racha: ${racha(mis.tests)} días</span>` : ""}</div>`;
+    const pintar = async (elegida, clave) => {
+      box.innerHTML = head() + `<div class="gb"><p class="q">${esc(t.pregunta)}</p>${t.opciones.map((o, i) => {
+        const cl = clave ? (i === clave.correcta ? "ok" : i === elegida ? "bad" : "") : "";
+        return `<button class="opt ${cl}" type="button" data-o="${i}"${elegida !== undefined ? " disabled" : ""}><span>${"ABCD"[i]}</span>${esc(o)}</button>`;
+      }).join("")}${clave ? `<p class="res ${elegida === clave.correcta ? "ok" : "bad"}">${elegida === clave.correcta ? "¡Correcto!" : "No es esa."}${clave.explicacion ? " " + esc(clave.explicacion) : ""}</p>` : ""}</div>`;
+      box.querySelectorAll("[data-o]").forEach(b => b.onclick = () => responder(+b.dataset.o));
+    };
+    const verClave = async () => { try{ const k = await F.getDoc(F.doc(db, "claves", hoy)); return k.exists() ? k.data() : null; }catch(e){ return null; } };
+    async function responder(o){
+      box.querySelectorAll("[data-o]").forEach(b => b.disabled = true);
+      try{
+        await F.setDoc(F.doc(db, "respuestasTest", hoy + "_" + user.uid), { tid: hoy, uid: user.uid, opcion: o, hora: F.serverTimestamp() });
+        mis.tests.push({ tid: hoy, opcion: o }); pintar(o, await verClave());
+      }catch(e){ console.error(e); toast("No se pudo guardar la respuesta."); pintar(); }
+    }
+    if(previa) pintar(previa.opcion, await verClave()); else pintar();
+  }
+  // Tercer tiempo
+  const pasadas = clases.filter(c => finClase(c.fecha).getTime() <= Date.now()).reverse();
+  let j = null, jid = null;
+  for(const c of pasadas.slice(0, 3)){ try{ const d = await F.getDoc(F.doc(db, "juegos", c.id)); if(d.exists()){ j = d.data(); jid = c.id; break; } }catch(e){} }
+  if(j){
+    const tt = document.getElementById("tt"); tt.hidden = false;
+    const mia = mis.jugadas.find(x => x.juego === jid);
+    const L = j.palabra.length;
+    const estado = !mia ? "Adiviná la palabra de la clase en 6 intentos." : mia.terminado ? (mia.gano ? `¡La adivinaste en ${mia.intentos.length}!` : "Esta vez no salió.") : `Te quedan ${6 - mia.intentos.length} intentos.`;
+    tt.innerHTML = `<div class="gh"><b>Tercer tiempo</b><span class="muted small">Clase ${j.n}</span></div><div class="gb">
+      <div class="mini" style="grid-template-columns:repeat(${L},1fr)">${Array.from({ length: L }, () => "<span></span>").join("")}</div>
+      <p style="margin:12px 0">${estado}</p><a class="btn ${mia && mia.terminado ? "" : "primary"}" href="tercer-tiempo.html">${!mia ? "Jugar" : mia.terminado ? "Ver resultado" : "Seguir jugando"}</a></div>`;
+  }
+}
 </script>
 </body>
 </html>

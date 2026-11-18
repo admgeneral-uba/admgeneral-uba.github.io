@@ -27,7 +27,8 @@ td input.nota{width:62px;padding:6px 8px;text-align:center}
 import { iniciar, db, F, esc, toast, $, leerClases, leerTomadas, corta, descargarCSV } from "./app.js";
 
 iniciar({ area: "docente", activo: "Estudiantes", titulo: "Estudiantes", fondo: "intenso" }, async (user, main) => {
-  const [clases, tomadas, est, as, ns] = await Promise.all([leerClases(), leerTomadas(), F.getDocs(F.collection(db, "estudiantes")), F.getDocs(F.collection(db, "asistencias")), F.getDocs(F.collection(db, "notas"))]);
+  const [clases, tomadas, est, as, ns, rt, jg] = await Promise.all([leerClases(), leerTomadas(), F.getDocs(F.collection(db, "estudiantes")), F.getDocs(F.collection(db, "asistencias")), F.getDocs(F.collection(db, "notas")), F.getDocs(F.collection(db, "respuestasTest")), F.getDocs(F.collection(db, "jugadas"))]);
+  const des = {}; rt.docs.forEach(d => des[d.data().uid] = (des[d.data().uid] || 0) + 1); jg.docs.forEach(d => { if(d.data().terminado) des[d.data().uid] = (des[d.data().uid] || 0) + 1; });
   const tom = clases.filter(c => tomadas[c.id]);
   const pres = {}; as.docs.forEach(d => { const r = d.data(); if(r.uid){ (pres[r.uid] = pres[r.uid] || new Set()).add(r.sesion); } });
   const notas = {}; ns.docs.forEach(d => notas[d.id] = d.data());
@@ -36,7 +37,7 @@ iniciar({ area: "docente", activo: "Estudiantes", titulo: "Estudiantes", fondo: 
     const n = tom.filter(c => pres[d.id] && pres[d.id].has(c.id)).length;
     return { uid: d.id, p, email: x.email || "", nombre: [p.nombre, p.apellido].filter(Boolean).join(" ") || x.nombreGoogle || x.email || "Sin nombre",
       orden: (p.apellido || "") + " " + (p.nombre || x.nombreGoogle || ""), pres: n, pct: tom.length ? Math.round(n / tom.length * 100) : null,
-      vistos: Object.values(x.vistos || {}).filter(Boolean).length, completo: ["b1", "b2", "b3", "b4", "b5"].every(k => b[k]), nota: notas[d.id] || {} };
+      vistos: Object.values(x.vistos || {}).filter(Boolean).length, des: des[d.id] || 0, completo: ["b1", "b2", "b3", "b4", "b5"].every(k => b[k]), nota: notas[d.id] || {} };
   }).sort((a, b) => a.orden.localeCompare(b.orden, "es"));
   const f = { riesgo: false, perfil: false, trabaja: false }; let q = "";
 
@@ -49,10 +50,10 @@ iniciar({ area: "docente", activo: "Estudiantes", titulo: "Estudiantes", fondo: 
   function draw(){
     const R = L.filter(s => (!f.riesgo || (s.pct !== null && s.pct < 75)) && (!f.perfil || !s.completo) && (!f.trabaja || s.p.trabaja === "Sí")
       && (!q || (s.nombre + " " + (s.p.legajo || "") + " " + s.email).toLowerCase().includes(q)));
-    $("#tabla").innerHTML = L.length ? `<table><tr><th>Estudiante</th><th>Legajo</th><th>Carrera</th><th>Trabaja</th><th>Asistencia</th><th>Contenidos vistos</th><th>Perfil</th><th>1.° parcial</th><th>2.° parcial</th></tr>
+    $("#tabla").innerHTML = L.length ? `<table><tr><th>Estudiante</th><th>Legajo</th><th>Carrera</th><th>Trabaja</th><th>Asistencia</th><th>Desafíos</th><th>Contenidos vistos</th><th>Perfil</th><th>1.° parcial</th><th>2.° parcial</th></tr>
       ${R.map(s => `<tr><td><div class="who">${s.p.foto ? `<img src="${s.p.foto}" alt="">` : `<span class="ini">${esc((s.nombre[0] || "?").toUpperCase())}</span>`}<span><b>${esc(s.nombre)}</b>${s.p.apodo ? `<br><small>${esc(s.p.apodo)}</small>` : ""}</span></div></td>
         <td>${esc(s.p.legajo || "—")}</td><td>${esc(s.p.carrera || "—")}</td><td>${esc(s.p.trabaja || "—")}</td>
-        <td>${s.pct === null ? "—" : pill(s.pct >= 75 ? true : false, s.pct + " %")}</td><td>${s.vistos}</td><td>${pill(s.completo ? true : null, s.completo ? "Completo" : "Incompleto")}</td>
+        <td>${s.pct === null ? "—" : pill(s.pct >= 75 ? true : false, s.pct + " %")}</td><td>${s.des}</td><td>${s.vistos}</td><td>${pill(s.completo ? true : null, s.completo ? "Completo" : "Incompleto")}</td>
         <td><input class="nota" type="text" inputmode="decimal" data-u="${s.uid}" data-k="parcial1" value="${esc(s.nota.parcial1 ?? "")}" aria-label="Nota del 1.° parcial de ${esc(s.nombre)}"></td>
         <td><input class="nota" type="text" inputmode="decimal" data-u="${s.uid}" data-k="parcial2" value="${esc(s.nota.parcial2 ?? "")}" aria-label="Nota del 2.° parcial de ${esc(s.nombre)}"></td></tr>`).join("")}</table>` : '<p class="empty">Todavía no ingresó ningún estudiante.</p>';
     $("#cnt").textContent = L.length ? `${R.length} de ${L.length} estudiantes` : "";
@@ -66,8 +67,8 @@ iniciar({ area: "docente", activo: "Estudiantes", titulo: "Estudiantes", fondo: 
   }
   $("#q").oninput = e => { q = e.target.value.trim().toLowerCase(); draw(); };
   main.querySelectorAll("[data-f]").forEach(b => b.onclick = () => { f[b.dataset.f] = !f[b.dataset.f]; b.setAttribute("aria-pressed", f[b.dataset.f]); draw(); });
-  $("#dA").onclick = () => descargarCSV("asistencia.csv", [["Apellido", "Nombre", "Legajo", "Email", ...tom.map(c => `Clase ${c.n} (${corta(c.fecha)})`), "Presentes", "Asistencia"],
-    ...L.map(s => [s.p.apellido || "", s.p.nombre || s.nombre, s.p.legajo || "", s.email, ...tom.map(c => pres[s.uid] && pres[s.uid].has(c.id) ? "P" : "A"), s.pres, s.pct === null ? "" : s.pct + " %"])]);
+  $("#dA").onclick = () => descargarCSV("asistencia.csv", [["Apellido", "Nombre", "Legajo", "Email", ...tom.map(c => `Clase ${c.n} (${corta(c.fecha)})`), "Presentes", "Asistencia", "Desafíos"],
+    ...L.map(s => [s.p.apellido || "", s.p.nombre || s.nombre, s.p.legajo || "", s.email, ...tom.map(c => pres[s.uid] && pres[s.uid].has(c.id) ? "P" : "A"), s.pres, s.pct === null ? "" : s.pct + " %", s.des])]);
   const FR = ["Rol de alta jerarquía", "Ganar dinero", "Impacto social", "Impacto ambiental", "Liderazgo", "Socializar", "Hablar en público"];
   $("#dP").onclick = () => descargarCSV("perfiles.csv", [["Apellido", "Nombre", "Apodo", "Legajo", "Email", "Fecha de nacimiento", "Lugar de nacimiento", "Carrera", "Materias aprobadas", "Otras materias", "Por qué estudia", "Trabaja", "Organización", "Cargo", "Antigüedad", ...FR, "Aspiración", "Película o serie", "Hobby", "Música", "Fútbol"],
     ...L.map(({ p, email, nombre }) => [p.apellido || "", p.nombre || nombre, p.apodo || "", p.legajo || "", email, p.nacimiento || "", p.lugar || "", p.carrera || "", p.aprobadas || "", p.otras || "", p.porque || "", p.trabaja || "", p.org || "", p.cargo || "", p.antig || "", ...FR.map((_, i) => (p.likert || {})[i] || ""), p.aspiracion || "", p.pelicula || "", p.hobby || "", p.musica || "", p.futbol || ""])]);
