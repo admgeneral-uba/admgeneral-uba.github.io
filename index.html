@@ -54,7 +54,7 @@
 <script type="module">
 import { iniciar, db, F, esc, toast, leerClases, leerUnidades, leerMiDoc, larga, hoyISO, esUrl, botonToggle, ICON, CURSO_INFO, finClase, misDesafios, racha } from "./app.js";
 
-iniciar({ area: "estudiantes", activo: "", titulo: CURSO_INFO.nombre, subtitulo: CURSO_INFO.subtitulo, grande: true }, async (user, main) => {
+iniciar({ area: "estudiantes", activo: "Inicio", titulo: "Inicio" }, async (user, main) => {
   const [clases, unidades, mio, avs] = await Promise.all([leerClases(), leerUnidades(), leerMiDoc(user.uid), F.getDocs(F.collection(db, "avisos"))]);
   const hechos = { ...(mio.hechos || {}) };
   const avisos = avs.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.orden || 0) - (b.orden || 0));

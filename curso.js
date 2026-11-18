@@ -5,7 +5,7 @@
 export const CURSO_INFO = {
   nombre: "Administración General",
   subtitulo: "Comisión n.° 86204 · Sede Drago · Martes/Viernes 7 a 9 hs. · 1.° Cuatrimestre 2027",
-  pie: "Cát. Federico Saravia · Prof. Nicolás Álvarez",
+  pie: "Comisión n.° 86204 · Cát. Federico Saravia · Prof. Nicolás Álvarez · Sede Drago · 1.° Cuatrimestre 2027",
 
   // Hora en que termina la clase: a partir de ese momento se habilita la presentación del día.
   horaFin: "09:00",

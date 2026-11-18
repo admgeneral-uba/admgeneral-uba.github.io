@@ -37,8 +37,8 @@ export const ICON = {
 };
 
 /* ---------- encabezado y pie ---------- */
-const NAV_EST = [["Cronograma", "cronograma.html"], ["Materiales", "materiales.html"], ["Información", "informacion.html"]];
-const NAV_DOC = [["Asistencia", "docente-asistencia.html"], ["Cronograma", "docente-cronograma.html"], ["Contenidos", "docente-contenidos.html"], ["Desafíos", "docente-desafios.html"], ["Recursos", "recursos.html"], ["Estudiantes", "docente-estudiantes.html"]];
+const NAV_EST = [["Inicio", "index.html"], ["Cronograma", "cronograma.html"], ["Materiales", "materiales.html"], ["Información", "informacion.html"]];
+const NAV_DOC = [["Inicio", "docente.html"], ["Asistencia", "docente-asistencia.html"], ["Cronograma", "docente-cronograma.html"], ["Contenidos", "docente-contenidos.html"], ["Desafíos", "docente-desafios.html"], ["Recursos", "recursos.html"], ["Estudiantes", "docente-estudiantes.html"]];
 
 function iniciales(n){ return String(n || "?").split(/\s+/).filter(Boolean).slice(0, 2).map(p => p[0].toUpperCase()).join(""); }
 function headerHTML(o, user){
@@ -49,15 +49,15 @@ function headerHTML(o, user){
     : `<a class="me${o.activo === "Perfil" ? " on" : ""}" href="perfil.html"${o.activo === "Perfil" ? ' aria-current="page"' : ""}>${av}Perfil</a>`;
   const extra = o.area === "docente" ? `<a href="index.html" class="small" style="color:var(--muted);text-decoration:underline">Ver como estudiante</a>` : "";
   const brand = o.area === "docente"
-    ? `<a class="brand" href="docente.html"><img src="img/uba.png" alt="UBA"><span>Área docente</span></a>`
-    : `<a class="brand" href="index.html" aria-label="Ir al inicio"><img src="img/uba.png" alt="UBA"></a>`;
+    ? `<a class="brand" href="docente.html"><img src="img/uba.png" alt="UBA"><span class="nom">${esc(CURSO_INFO.nombre)}</span><span class="tag">Área docente</span></a>`
+    : `<a class="brand" href="index.html"><img src="img/uba.png" alt="UBA"><span class="nom">${esc(CURSO_INFO.nombre)}</span></a>`;
   return `<header class="hero ${o.fondo || ""} ${o.grande ? "big" : ""}"><div class="in">
     <div class="top">${brand}<nav class="menu" aria-label="Secciones">${nav}${extra}${me}</nav></div>
     <div><h1>${esc(o.titulo)}</h1>${o.subtitulo ? `<span class="sub">${esc(o.subtitulo)}</span>` : ""}</div>
   </div></header>`;
 }
 function footerHTML(o){
-  return `<footer class="pie"><div class="in"><span>${esc(CURSO_INFO.pie)}</span>${o.area === "docente" ? "" : '<a href="docente.html">Área docente</a>'}</div></footer>`;
+  return `<footer class="pie"><div class="in"><span>${esc(CURSO_INFO.pie)}</span></div></footer>`;
 }
 
 /* ---------- ingreso ---------- */
@@ -87,7 +87,7 @@ export function iniciar(o, alListo){
     const main = pintar(user);
     if(!user){
       main.innerHTML = `<div class="card login"><h2 style="font-size:28px">Ingresá para continuar</h2>
-        <p>Usá tu cuenta de Google. Es la misma que usás para Classroom.</p>
+        <p>Usá tu cuenta de Google.</p>
         <button class="gbtn" id="entrar" type="button">${ICON.google}Ingresar con Google</button><p id="loginErr" style="color:var(--bad)"></p></div>`;
       $("#entrar").onclick = async () => {
         try{ await signInWithPopup(auth, new GoogleAuthProvider()); }

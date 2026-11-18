@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Carlito:wght@400;700&family=Caladea:wght@400;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Carlito:wght@400;700&family=Caladea:wght@400;700&family=Patrick+Hand+SC&display=swap");
 
 :root{
   --bg:#F7F5FB; --paper:#FFFFFF; --ink:#1E2550; --ink2:#2E3566; --text:#3A3F60; --muted:#5A5F78;
@@ -30,7 +30,8 @@ h1,h2,h3,.serif{font-family:var(--serif)}
 .top{display:flex;flex-wrap:wrap;gap:14px;align-items:center;justify-content:space-between}
 .brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--ink)}
 .brand img{width:56px;height:56px}
-.brand span{font-weight:700;background:rgba(255,255,255,.8);border-radius:8px;padding:4px 10px}
+.brand .nom{font-family:"Patrick Hand SC",var(--sans);font-size:clamp(26px,3.4vw,36px);line-height:1;letter-spacing:.02em;color:var(--ink);white-space:nowrap}
+.brand .tag{font-weight:700;font-size:15px;background:rgba(255,255,255,.8);border-radius:8px;padding:4px 10px}
 nav.menu{display:flex;flex-wrap:wrap;gap:4px;align-items:center;background:rgba(255,255,255,.8);border-radius:12px;padding:4px}
 nav.menu a{padding:9px 14px;border-radius:9px;text-decoration:none;color:var(--ink)}
 nav.menu a[aria-current="page"]{background:var(--ink);color:#fff;font-weight:700}
@@ -45,7 +46,7 @@ nav.menu .out{font:inherit;font-size:15px;color:var(--muted);background:none;bor
 
 main{flex:1;width:100%;max-width:1120px;margin:0 auto;padding:24px 24px 40px;display:flex;flex-direction:column;gap:24px}
 footer.pie{border-top:1px solid var(--line);background:var(--paper)}
-footer.pie .in{max-width:1120px;margin:0 auto;padding:18px 24px;display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;color:var(--muted);font-size:15px}
+footer.pie .in{max-width:1120px;margin:0 auto;padding:18px 24px;display:flex;flex-wrap:wrap;gap:12px;justify-content:center;text-align:center;color:var(--muted);font-size:15px}
 footer.pie a{color:var(--muted)}
 
 /* piezas */
@@ -93,4 +94,6 @@ label.l{display:block;font-weight:700;font-size:15px;margin:0 0 4px}
   main{padding:18px 16px 32px}
   .card{padding:18px}
   .brand img{width:46px;height:46px}
+  .brand .nom{font-size:24px;white-space:normal}
+  .brand .tag{display:none}
 }
