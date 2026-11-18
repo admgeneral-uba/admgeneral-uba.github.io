@@ -28,7 +28,6 @@
 import { iniciar, db, F, esc, toast, $, leerClases, leerTomadas, larga, hoyISO, esUrl, finClase, CURSO_INFO } from "./app.js";
 
 iniciar({ area: "docente", activo: "Inicio", titulo: "Hola, Nicolás", fondo: "intenso" }, async (user, main) => {
-  const nom = (user.displayName || "").split(" ")[0]; if(nom) document.querySelector(".hero h1").textContent = "Hola, " + nom;
   const [clases, tomadas, est, as, avs] = await Promise.all([leerClases(), leerTomadas(), F.getDocs(F.collection(db, "estudiantes")), F.getDocs(F.collection(db, "asistencias")), F.getDocs(F.collection(db, "avisos"))]);
   const hoy = hoyISO(), prox = clases.find(c => c.fecha >= hoy);
   const tom = clases.filter(c => tomadas[c.id]);

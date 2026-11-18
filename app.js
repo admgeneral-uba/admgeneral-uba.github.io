@@ -58,23 +58,23 @@ export const ICON = {
 };
 
 /* ---------- encabezado y pie ---------- */
-const NAV_EST = [["Inicio", "index.html"], ["Cronograma", "cronograma.html"], ["Materiales", "materiales.html"], ["Información", "informacion.html"]];
-const NAV_DOC = [["Inicio", "docente.html"], ["Asistencia", "docente-asistencia.html"], ["Cronograma", "docente-cronograma.html"], ["Contenidos", "docente-contenidos.html"], ["Desafíos", "docente-desafios.html"], ["Recursos", "recursos.html"], ["Estudiantes", "docente-estudiantes.html"]];
+const NAV_EST = [["Cronograma", "cronograma.html"], ["Materiales", "materiales.html"], ["Información", "informacion.html"]];
+const NAV_DOC = [["Asistencia", "docente-asistencia.html"], ["Cronograma", "docente-cronograma.html"], ["Contenidos", "docente-contenidos.html"], ["Desafíos", "docente-desafios.html"], ["Recursos", "recursos.html"], ["Estudiantes", "docente-estudiantes.html"]];
 
 function iniciales(n){ return String(n || "?").split(/\s+/).filter(Boolean).slice(0, 2).map(p => p[0].toUpperCase()).join(""); }
 function headerHTML(o, user){
   const nav = (o.area === "docente" ? NAV_DOC : NAV_EST).map(([t, h]) => `<a href="${h}"${t === o.activo ? ' aria-current="page"' : ""}>${t}</a>`).join("");
   const av = user ? (user.photoURL ? `<img src="${esc(user.photoURL)}" alt="" referrerpolicy="no-referrer">` : `<span class="ini">${esc(iniciales(user.displayName))}</span>`) : "";
   const me = !user ? "" : o.area === "docente"
-    ? `<span class="me">${av}<button class="out" id="salir" type="button">Salir</button></span>`
-    : `<a class="me${o.activo === "Perfil" ? " on" : ""}" href="perfil.html"${o.activo === "Perfil" ? ' aria-current="page"' : ""}>${av}Perfil</a>`;
-  const extra = o.area === "docente" ? `<a href="index.html" class="small" style="color:var(--muted);text-decoration:underline">Ver como estudiante</a>` : "";
+    ? `<span class="me">${av}<a href="index.html" class="out">Ver como estudiante</a><button class="out" id="salir" type="button">Salir</button></span>`
+    : `<a class="me${o.activo === "Perfil" ? " on" : ""}" href="perfil.html" aria-label="Perfil" title="Perfil"${o.activo === "Perfil" ? ' aria-current="page"' : ""}>${av}</a>`;
+  const extra = "";
   const brand = o.area === "docente"
-    ? `<a class="brand" href="docente.html"><img src="img/uba.png" alt="UBA"><span class="nom">${esc(CURSO_INFO.nombre)}</span><span class="tag">Área docente</span></a>`
-    : `<a class="brand" href="index.html"><img src="img/uba.png" alt="UBA"><span class="nom">${esc(CURSO_INFO.nombre)}</span></a>`;
-  return `<header class="hero ${o.fondo || ""} ${o.grande ? "big" : ""}"><div class="in">
-    <div class="top">${brand}<nav class="menu" aria-label="Secciones">${nav}${extra}${me}</nav></div>
-    <div><h1>${esc(o.titulo)}</h1>${o.subtitulo ? `<span class="sub">${esc(o.subtitulo)}</span>` : ""}</div>
+    ? `<a class="brand" href="docente.html" aria-label="Inicio del área docente"><img src="img/uba.png" alt="UBA"><span class="nom">${esc(CURSO_INFO.nombre)}</span><span class="tag">Área docente</span></a>`
+    : `<a class="brand" href="index.html" aria-label="Inicio"><img src="img/uba.png" alt="UBA"><span class="nom">${esc(CURSO_INFO.nombre)}</span></a>`;
+  return `<header class="hero ${o.fondo || ""}${o.area === "docente" ? " doc" : ""}"><div class="in">
+    <div class="top">${brand}<nav class="menu" aria-label="Secciones">${nav}${extra}</nav>${me}</div>
+    <h1 class="sr">${esc(o.titulo)}</h1>
   </div></header>`;
 }
 function footerHTML(o){
@@ -138,7 +138,7 @@ export function iniciar(o, alListo){
 
 function bannerPrueba(){
   const b = document.createElement("div"); b.className = "prueba";
-  b.innerHTML = '<span><b>Vista de prueba.</b> Así ve el sitio un estudiante. No se guarda nada.</span><button type="button" class="btn small">Salir</button>';
+  b.innerHTML = '<span><b>Vista de prueba.</b> No se guarda nada.</span><button type="button" class="btn small">Salir</button>';
   b.querySelector("button").onclick = salirPrueba;
   document.body.prepend(b);
 }
