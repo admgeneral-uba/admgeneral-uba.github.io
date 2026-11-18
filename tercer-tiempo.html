@@ -81,12 +81,12 @@
 </head>
 <body>
 <script type="module">
-import { iniciar, db, F, esc, $, leerClases, finClase } from "./app.js";
+import { iniciar, db, F, esc, $, leerClases, finClase, ahora } from "./app.js";
 import { normal, TIPOS, tipoDe, rng, barajar, armarSopa, armarCrucigrama } from "./juegos.js";
 
 iniciar({ area: "estudiantes", activo: "", titulo: "Tercer tiempo" }, async (user, main) => {
-  const clases = await leerClases(), ahora = Date.now();
-  const pasadas = clases.filter(c => finClase(c.fecha).getTime() <= ahora).reverse();
+  const clases = await leerClases(), momento = ahora();
+  const pasadas = clases.filter(c => finClase(c.fecha).getTime() <= momento).reverse();
   let juego = null, jid = null;
   for(const c of pasadas.slice(0, 3)){
     try{ const d = await F.getDoc(F.doc(db, "juegos", c.id)); if(d.exists()){ juego = d.data(); jid = c.id; break; } }catch(e){}

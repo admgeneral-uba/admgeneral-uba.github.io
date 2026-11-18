@@ -54,7 +54,7 @@
 </head>
 <body>
 <script type="module">
-import { iniciar, db, F, esc, toast, leerClases, leerUnidades, leerMiDoc, larga, hoyISO, esUrl, botonToggle, ICON, CURSO_INFO, finClase, misDesafios, racha } from "./app.js";
+import { iniciar, db, F, esc, toast, leerClases, leerUnidades, leerMiDoc, larga, hoyISO, esUrl, botonToggle, ICON, CURSO_INFO, finClase, misDesafios, racha, ahora } from "./app.js";
 import { TIPOS, tipoDe } from "./juegos.js";
 
 iniciar({ area: "estudiantes", activo: "Inicio", titulo: "Inicio" }, async (user, main) => {
@@ -134,7 +134,7 @@ async function desafios(user, clases, hoy){
     if(previa) pintar(previa.opcion, await verClave()); else pintar();
   }
   // Tercer tiempo
-  const pasadas = clases.filter(c => finClase(c.fecha).getTime() <= Date.now()).reverse();
+  const pasadas = clases.filter(c => finClase(c.fecha).getTime() <= ahora()).reverse();
   let j = null, jid = null;
   for(const c of pasadas.slice(0, 3)){ try{ const d = await F.getDoc(F.doc(db, "juegos", c.id)); if(d.exists()){ j = d.data(); jid = c.id; break; } }catch(e){} }
   if(j){

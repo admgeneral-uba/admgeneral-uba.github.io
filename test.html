@@ -6,7 +6,13 @@
 <meta name="robots" content="noindex">
 <title>Vista de prueba</title>
 <script>
-try{ sessionStorage.setItem("vistaPrueba", "1"); }catch(e){}
+// Fecha simulada: test.html?fecha=AAAA-MM-DD. Sin parámetro, un día sin clase después de la tercera clase.
+// Solo se aplica si el docente tiene su sesión abierta en este navegador.
+try{
+  const f = new URLSearchParams(location.search).get("fecha");
+  sessionStorage.setItem("vistaPrueba", "1");
+  sessionStorage.setItem("fechaPrueba", /^\d{4}-\d{2}-\d{2}$/.test(f || "") ? f : "2027-04-14");
+}catch(e){}
 location.replace("index.html");
 </script>
 </head>

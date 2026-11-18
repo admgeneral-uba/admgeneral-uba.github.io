@@ -13,12 +13,20 @@ import { CURSO_INFO } from "./curso.js";
    Muestra el sitio como lo ve un estudiante, sin cuenta de Google y sin guardar nada.
    Usa una conexión aparte, así no cierra la sesión docente del navegador. */
 export const PRUEBA = (() => { try{ return sessionStorage.getItem("vistaPrueba") === "1"; }catch(e){ return false; } })();
-let db = dbSitio, auth = authSitio;
+let db = dbSitio, auth = authSitio, docenteEnPrueba = false;
 if(PRUEBA && configurado){
   const appP = initializeApp(firebaseConfig, "vista-prueba");
   db = FS.getFirestore(appP); auth = getAuth(appP);
   await setPersistence(auth, browserSessionPersistence).catch(() => {});
+  // Si el docente tiene su sesión abierta en este navegador, la vista de prueba lee con sus permisos
+  // y puede simular una fecha del cuatrimestre (test.html?fecha=AAAA-MM-DD).
+  const u = await new Promise(r => { const un = onAuthStateChanged(authSitio, x => { un(); r(x); }); });
+  if(u && !u.isAnonymous){ try{ await FS.getDoc(FS.doc(dbSitio, "sesiones", "prueba-docente")); db = dbSitio; docenteEnPrueba = true; }catch(e){} }
 }
+const FECHA_PRUEBA = (() => { try{ return PRUEBA && docenteEnPrueba ? sessionStorage.getItem("fechaPrueba") : null; }catch(e){ return null; } })();
+const T0 = Date.now();
+// Momento actual (simulado en la vista de prueba del docente).
+export const ahora = () => FECHA_PRUEBA ? Date.parse(FECHA_PRUEBA + "T10:00:00-03:00") + (Date.now() - T0) : Date.now();
 // En la vista de prueba las escrituras no hacen nada.
 const nada = async () => {};
 const F = PRUEBA ? { ...FS, setDoc: nada, updateDoc: nada, deleteDoc: nada, addDoc: async () => ({ id: "prueba" }),
@@ -27,7 +35,7 @@ const F = PRUEBA ? { ...FS, setDoc: nada, updateDoc: nada, deleteDoc: nada, addD
 export { db, auth, F, CURSO_INFO };
 export const salir = () => PRUEBA ? salirPrueba() : signOut(auth);
 export function salirPrueba(){
-  try{ sessionStorage.removeItem("vistaPrueba"); }catch(e){}
+  try{ sessionStorage.removeItem("vistaPrueba"); sessionStorage.removeItem("fechaPrueba"); }catch(e){}
   signOut(auth).finally(() => location.href = "index.html");
 }
 
@@ -40,7 +48,7 @@ export const DIAS = ["domingo", "lunes", "martes", "miércoles", "jueves", "vier
 export const MESES = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
 const pad = n => String(n).padStart(2, "0");
 export const iso = d => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
-export const hoyISO = () => iso(new Date());
+export const hoyISO = () => iso(new Date(ahora()));
 export const aFecha = s => { const [y, m, d] = String(s).split("-").map(Number); return new Date(y, (m || 1) - 1, d || 1, 12); };
 export const corta = s => { const d = aFecha(s); return DIAS[d.getDay()].slice(0, 3) + " " + d.getDate() + "/" + (d.getMonth() + 1); };
 export const larga = s => { const d = aFecha(s); const t = DIAS[d.getDay()] + " " + d.getDate() + " de " + MESES[d.getMonth()]; return t.charAt(0).toUpperCase() + t.slice(1); };
@@ -49,7 +57,7 @@ export const esUrl = u => /^https?:\/\/\S+$/i.test(String(u || "").trim());
 export function claseTerminada(fechaISO){
   const [h, m] = (CURSO_INFO.horaFin || "09:00").split(":").map(Number);
   const fin = aFecha(fechaISO); fin.setHours(h, m, 0, 0);
-  return Date.now() >= fin.getTime();
+  return ahora() >= fin.getTime();
 }
 export const ICON = {
   check: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg>',
@@ -205,7 +213,7 @@ export async function misDesafios(uid){
   return { tests: r.docs.map(d => d.data()), jugadas: j.docs.map(d => d.data()) };
 }
 export function racha(tests){
-  const set = new Set(tests.map(t => t.tid)); let d = new Date(), n = 0;
+  const set = new Set(tests.map(t => t.tid)); let d = new Date(ahora()), n = 0;
   if(!set.has(iso(d))) d = new Date(d.getTime() - 864e5);
   while(set.has(iso(d))){ n++; d = new Date(d.getTime() - 864e5); }
   return n;
