@@ -55,6 +55,7 @@
 <body>
 <script type="module">
 import { iniciar, db, F, esc, toast, leerClases, leerUnidades, leerMiDoc, larga, hoyISO, esUrl, botonToggle, ICON, CURSO_INFO, finClase, misDesafios, racha } from "./app.js";
+import { TIPOS, tipoDe } from "./juegos.js";
 
 iniciar({ area: "estudiantes", activo: "Inicio", titulo: "Inicio" }, async (user, main) => {
   const [clases, unidades, mio, avs] = await Promise.all([leerClases(), leerUnidades(), leerMiDoc(user.uid), F.getDocs(F.collection(db, "avisos"))]);
@@ -139,11 +140,11 @@ async function desafios(user, clases, hoy){
   if(j){
     const tt = document.getElementById("tt"); tt.hidden = false;
     const mia = mis.jugadas.find(x => x.juego === jid);
-    const L = j.palabra.length;
-    const estado = !mia ? "Adiviná la palabra de la clase en 6 intentos." : mia.terminado ? (mia.gano ? `¡La adivinaste en ${mia.intentos.length}!` : "Esta vez no salió.") : `Te quedan ${6 - mia.intentos.length} intentos.`;
+    const tp = tipoDe(j);
+    const estado = !mia ? TIPOS[tp].desc : mia.terminado ? (mia.gano ? "¡Lo resolviste!" : "Esta vez no salió.") : "Tenés un juego empezado.";
     tt.innerHTML = `<div class="gh"><b>Tercer tiempo</b><span class="muted small">Clase ${j.n}</span></div><div class="gb">
-      <div class="mini" style="grid-template-columns:repeat(${L},1fr)">${Array.from({ length: L }, () => "<span></span>").join("")}</div>
-      <p style="margin:12px 0">${estado}</p><a class="btn ${mia && mia.terminado ? "" : "primary"}" href="tercer-tiempo.html">${!mia ? "Jugar" : mia.terminado ? "Ver resultado" : "Seguir jugando"}</a></div>`;
+      <p style="margin:0;font-family:var(--serif);font-size:22px;font-weight:700">${TIPOS[tp].nombre}</p>
+      <p style="margin:8px 0 12px">${estado}</p><a class="btn ${mia && mia.terminado ? "" : "primary"}" href="tercer-tiempo.html">${!mia ? "Jugar" : mia.terminado ? "Ver resultado" : "Seguir jugando"}</a></div>`;
   }
 }
 </script>

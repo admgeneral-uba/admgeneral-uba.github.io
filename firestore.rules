@@ -179,7 +179,7 @@ service cloud.firestore {
         return request.resource.data.keys().hasOnly(['juego','uid','intentos','gano','terminado','hora'])
           && request.resource.data.uid == request.auth.uid
           && rid == request.resource.data.juego + '_' + request.auth.uid
-          && request.resource.data.intentos is list && request.resource.data.intentos.size() <= 6
+          && request.resource.data.intentos is list && request.resource.data.intentos.size() <= 12
           && request.resource.data.gano is bool && request.resource.data.terminado is bool
           && request.resource.data.hora == request.time;
       }

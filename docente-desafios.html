@@ -27,11 +27,17 @@ details.u[open]>summary{border-bottom:1px solid var(--line)}
 .ufoot{display:flex;justify-content:flex-end}
 .pal{display:grid;grid-template-columns:minmax(0,240px) minmax(0,1fr);gap:10px}
 @media (max-width:700px){.pal{grid-template-columns:1fr}}
+.jg{display:flex;flex-direction:column;gap:10px}
+.jg label.t{display:flex;gap:10px;align-items:center;font-weight:700}
+.jg label.t select{max-width:260px}
+.jg .gp{display:grid;grid-template-columns:minmax(0,220px) minmax(0,1fr);gap:10px}
+@media (max-width:700px){.jg .gp{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <script type="module">
-import { iniciar, db, F, esc, toast, $, leerClases, corta, larga, diasDeTest, inicioDia, finClase, normal, hoyISO } from "./app.js";
+import { iniciar, db, F, esc, toast, $, leerClases, corta, larga, diasDeTest, inicioDia, finClase, hoyISO } from "./app.js";
+import { normal, TIPOS, ORDEN_TIPOS, tipoDe, armarSopa, armarCrucigrama } from "./juegos.js";
 
 iniciar({ area: "docente", activo: "Desafíos", titulo: "Desafíos", fondo: "intenso" }, async (user, main) => {
   const clases = await leerClases();
@@ -41,10 +47,60 @@ iniciar({ area: "docente", activo: "Desafíos", titulo: "Desafíos", fondo: "int
   const K = {}; ks.docs.forEach(d => K[d.id] = d.data());
   const J = {}; js.docs.forEach(d => J[d.id] = d.data());
   const hoy = hoyISO();
+  function aRaw(j, i){
+    const r = { tipo: j ? tipoDe(j) : ORDEN_TIPOS[i % ORDEN_TIPOS.length], hay: !!j, palabra: "", pista: "", tema: "", sopa: "", cru: "", respuesta: "", aceptadas: "", p: ["", "", "", "", ""], g: [0, 1, 2, 3].map(() => ({ n: "", it: "" })) };
+    if(!j) return r;
+    r.palabra = j.palabra || ""; r.pista = j.pista || ""; r.tema = j.tema || "";
+    if(r.tipo === "sopa") r.sopa = (j.palabras || []).join("\n");
+    if(r.tipo === "crucigrama") r.cru = (j.palabras || []).map(x => `${x.palabra}: ${x.pista}`).join("\n");
+    if(j.grupos) r.g = j.grupos.map(g => ({ n: g.nombre, it: g.items.join(", ") }));
+    if(j.pistas){ r.respuesta = j.respuesta || ""; r.aceptadas = (j.aceptadas || []).join(", "); r.p = [0, 1, 2, 3, 4].map(k => j.pistas[k] || ""); }
+    return r;
+  }
+  function juegoHTML(r, i){
+    const t = r.tipo, inp = (k, v, ph, extra = "") => `<input type="text" data-j="${i}:${k}" value="${esc(v)}" placeholder="${ph}" aria-label="${ph}" ${extra}>`;
+    let campos = "";
+    if(t === "palabra") campos = `<div class="pal">${inp("palabra", r.palabra, "Palabra de la clase", 'maxlength="10" style="text-transform:uppercase;font-weight:700;letter-spacing:.1em"')}${inp("pista", r.pista, "Pista (se ve al terminar)", 'maxlength="120"')}</div>`;
+    if(t === "conexiones") campos = `<p class="extra" style="margin:0">Cuatro grupos de cuatro, del más fácil al más difícil. Separá los términos con comas.</p>${r.g.map((g, k) => `<div class="gp">${inp("gn" + k, g.n, "Nombre del grupo " + (k + 1))}${inp("gi" + k, g.it, "4 términos separados por comas")}</div>`).join("")}`;
+    if(t === "sopa") campos = `${inp("tema", r.tema, "Tema (se muestra arriba de la sopa)")}<textarea rows="6" data-j="${i}:sopa" placeholder="Una palabra por renglón (entre 4 y 10, de hasta 11 letras)" aria-label="Palabras">${esc(r.sopa)}</textarea>`;
+    if(t === "crucigrama") campos = `<p class="extra" style="margin:0">Un renglón por palabra, con el formato PALABRA: pista. Entre 5 y 8 palabras; el crucigrama se arma solo.</p><textarea rows="8" data-j="${i}:cru" placeholder="EFICACIA: Hacer las cosas correctas" aria-label="Palabras y pistas">${esc(r.cru)}</textarea>`;
+    if(t === "pistas") campos = `<div class="gp">${inp("respuesta", r.respuesta, "Respuesta")}${inp("aceptadas", r.aceptadas, "Otras respuestas válidas, separadas por comas")}</div>${r.p.map((p, k) => inp("p" + k, p, `Pista ${k + 1}${k === 0 ? " (la más difícil)" : k === 4 ? " (la más fácil)" : ""}`)).join("")}`;
+    return `<div class="jg"><label class="t">Formato <select data-tipo="${i}">${ORDEN_TIPOS.map(k => `<option value="${k}"${k === t ? " selected" : ""}>${TIPOS[k].nombre}</option>`).join("")}</select></label>${campos}</div>`;
+  }
+  const lista = s => String(s || "").split(/[,\n]/).map(x => x.trim()).filter(Boolean);
+  function armarJuego(r){
+    const t = r.tipo;
+    if(t === "palabra"){ const p = normal(r.palabra); if(!p) return null; if(p.length < 4 || p.length > 10) throw "La palabra tiene que tener entre 4 y 10 letras."; return { palabra: p, pista: r.pista.trim() }; }
+    if(t === "conexiones"){
+      if(r.g.every(g => !g.n.trim() && !g.it.trim())) return null;
+      const grupos = r.g.map(g => ({ nombre: g.n.trim(), items: lista(g.it) }));
+      if(grupos.some(g => !g.nombre || g.items.length !== 4)) throw "Cada grupo necesita un nombre y exactamente 4 términos.";
+      if(new Set(grupos.flatMap(g => g.items.map(x => x.toLowerCase()))).size !== 16) throw "Hay términos repetidos entre los grupos.";
+      return { grupos };
+    }
+    if(t === "sopa"){
+      const ps = String(r.sopa).split("\n").map(normal).filter(Boolean); if(!ps.length) return null;
+      if(ps.length < 4 || ps.length > 10 || ps.some(p => p.length < 3 || p.length > 11)) throw "La sopa necesita entre 4 y 10 palabras, de 3 a 11 letras.";
+      if(!armarSopa(ps, "x")) throw "No se pudo armar la sopa con esas palabras. Probá con menos o más cortas.";
+      return { tema: r.tema.trim(), palabras: ps };
+    }
+    if(t === "crucigrama"){
+      const ps = String(r.cru).split("\n").map(l => l.split(":")).filter(a => a[0].trim()).map(a => ({ palabra: normal(a[0]), pista: a.slice(1).join(":").trim() }));
+      if(!ps.length) return null;
+      if(ps.length < 4 || ps.some(p => !p.pista || p.palabra.length < 3)) throw "Cargá al menos 4 palabras, cada una con su pista.";
+      const x = armarCrucigrama(ps); if(x.faltan.length) throw "No entraron en el crucigrama: " + x.faltan.join(", ") + ". Cambialas por otras.";
+      return { palabras: ps };
+    }
+    if(t === "pistas"){
+      if(!r.respuesta.trim()) return null;
+      const pistas = r.p.map(x => x.trim()).filter(Boolean); if(pistas.length < 3) throw "Cargá al menos 3 pistas.";
+      return { respuesta: r.respuesta.trim(), aceptadas: lista(r.aceptadas), pistas };
+    }
+  }
   const E = clases.map((c, i) => {
     const dias = diasDeTest(clases, i);
     const preguntas = dias.filter(d => T[d] && T[d].clase === c.id).map(d => ({ pregunta: T[d].pregunta, opciones: [...T[d].opciones], correcta: K[d] ? K[d].correcta : 0, explicacion: K[d] ? K[d].explicacion || "" : "" }));
-    return { c, dias, preguntas, palabra: J[c.id] ? J[c.id].palabra : "", pista: J[c.id] ? J[c.id].pista || "" : "" };
+    return { c, dias, preguntas, jr: aRaw(J[c.id], i) };
   });
   const abiertas = new Set([E.findIndex(e => e.c.fecha >= hoy)].filter(i => i >= 0));
 
@@ -58,14 +114,12 @@ iniciar({ area: "docente", activo: "Desafíos", titulo: "Desafíos", fondo: "int
   function claseHTML(e, i){
     const n = e.preguntas.length;
     return `<details class="u" data-i="${i}"${abiertas.has(i) ? " open" : ""}><summary><span class="num">Clase ${e.c.n}</span><h2>${esc(e.c.titulo)}</h2>
-      <span class="pill ${n >= e.dias.length ? "ok" : n ? "na" : "na"}">${n} de ${e.dias.length} preguntas</span><span class="pill ${e.palabra ? "ok" : "na"}">${e.palabra ? "Palabra cargada" : "Sin palabra"}</span></summary>
+      <span class="pill ${n >= e.dias.length ? "ok" : n ? "na" : "na"}">${n} de ${e.dias.length} preguntas</span><span class="pill ${e.jr.hay ? "ok" : "na"}">${e.jr.hay ? TIPOS[e.jr.tipo].nombre : "Sin juego"}</span></summary>
       <div class="ub">
         <div><h3>Test de lectura</h3><p class="extra" style="margin:-4px 0 12px">Una pregunta por día, del ${esc(corta(e.dias[0]))} al ${esc(corta(e.dias[e.dias.length - 1]))}.</p>
           ${e.preguntas.map((q, j) => qHTML(e, i, q, j)).join("")}
           <button class="btn small" type="button" data-addq="${i}">Agregar pregunta</button></div>
-        <div><h3>Tercer tiempo</h3><div class="pal">
-          <input type="text" data-pal="${i}" value="${esc(e.palabra)}" maxlength="10" placeholder="Palabra de la clase" aria-label="Palabra de la clase" style="text-transform:uppercase;font-weight:700;letter-spacing:.1em">
-          <input type="text" data-pis="${i}" value="${esc(e.pista)}" maxlength="120" placeholder="Pista (se ve al terminar)" aria-label="Pista"></div></div>
+        <div><h3>Tercer tiempo</h3>${juegoHTML(e.jr, i)}</div>
         <div class="ufoot"><button class="btn primary" type="button" data-sv="${i}">Guardar clase ${e.c.n}</button></div>
       </div></details>`;
   }
@@ -77,8 +131,9 @@ iniciar({ area: "docente", activo: "Desafíos", titulo: "Desafíos", fondo: "int
     main.querySelectorAll("[data-ok]").forEach(el => el.onchange = () => qq(el.dataset.ok).correcta = +el.value);
     main.querySelectorAll("[data-dq]").forEach(b => b.onclick = () => { const [i, j] = b.dataset.dq.split(":").map(Number); E[i].preguntas.splice(j, 1); draw(); });
     main.querySelectorAll("[data-addq]").forEach(b => b.onclick = () => { E[+b.dataset.addq].preguntas.push({ pregunta: "", opciones: ["", "", "", ""], correcta: 0, explicacion: "" }); draw(); });
-    main.querySelectorAll("[data-pal]").forEach(el => el.oninput = () => E[+el.dataset.pal].palabra = el.value);
-    main.querySelectorAll("[data-pis]").forEach(el => el.oninput = () => E[+el.dataset.pis].pista = el.value);
+    main.querySelectorAll("[data-j]").forEach(el => el.oninput = () => { const [i, k] = el.dataset.j.split(":"), r = E[+i].jr;
+      if(/^gn\d$/.test(k)) r.g[+k[2]].n = el.value; else if(/^gi\d$/.test(k)) r.g[+k[2]].it = el.value; else if(/^p\d$/.test(k)) r.p[+k[1]] = el.value; else r[k] = el.value; });
+    main.querySelectorAll("[data-tipo]").forEach(el => el.onchange = () => { E[+el.dataset.tipo].jr.tipo = el.value; draw(); });
     main.querySelectorAll("[data-sv]").forEach(b => b.onclick = () => guardar(+b.dataset.sv, b));
   }
   async function guardar(i, btn){
@@ -86,8 +141,7 @@ iniciar({ area: "docente", activo: "Desafíos", titulo: "Desafíos", fondo: "int
     const qs = e.preguntas.filter(q => q.pregunta.trim());
     if(qs.some(q => q.opciones.some(o => !String(o).trim()))){ toast("Completá las 4 opciones de cada pregunta."); return; }
     if(qs.length > e.dias.length){ toast(`Hay ${qs.length} preguntas y ${e.dias.length} días. Quitá las que sobran.`); return; }
-    const pal = normal(e.palabra);
-    if(e.palabra.trim() && (pal.length < 4 || pal.length > 10)){ toast("La palabra tiene que tener entre 4 y 10 letras."); return; }
+    let jd; try{ jd = armarJuego(e.jr); }catch(m){ toast(m); return; }
     btn.disabled = true;
     try{
       const b = F.writeBatch(db);
@@ -98,12 +152,12 @@ iniciar({ area: "docente", activo: "Desafíos", titulo: "Desafíos", fondo: "int
           b.set(F.doc(db, "claves", dia), { correcta: q.correcta, explicacion: (q.explicacion || "").trim() });
         }else if(T[dia]){ b.delete(F.doc(db, "tests", dia)); b.delete(F.doc(db, "claves", dia)); }
       });
-      if(pal) b.set(F.doc(db, "juegos", e.c.id), { palabra: pal, pista: e.pista.trim(), n: e.c.n, titulo: e.c.titulo, desde: F.Timestamp.fromDate(finClase(e.c.fecha)) });
+      if(jd) b.set(F.doc(db, "juegos", e.c.id), { tipo: e.jr.tipo, ...jd, n: e.c.n, titulo: e.c.titulo, desde: F.Timestamp.fromDate(finClase(e.c.fecha)) });
       else if(J[e.c.id]) b.delete(F.doc(db, "juegos", e.c.id));
       await b.commit();
       e.dias.forEach((dia, j) => { if(qs[j]) T[dia] = { clase: e.c.id }; else delete T[dia]; });
-      if(pal) J[e.c.id] = { palabra: pal }; else delete J[e.c.id];
-      e.preguntas = qs; e.palabra = pal;
+      if(jd) J[e.c.id] = { tipo: e.jr.tipo, ...jd }; else delete J[e.c.id];
+      e.preguntas = qs; e.jr.hay = !!jd;
       toast(`Clase ${e.c.n} guardada`); draw();
     }catch(err){ console.error(err); toast("No se pudo guardar."); btn.disabled = false; }
   }

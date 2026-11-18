@@ -7,8 +7,9 @@
 <link rel="icon" href="img/uba.png">
 <link rel="stylesheet" href="sitio.css">
 <style>
-.game{max-width:560px;margin:0 auto;width:100%;display:flex;flex-direction:column;align-items:center;gap:18px}
+.game{max-width:600px;margin:0 auto;width:100%;display:flex;flex-direction:column;align-items:center;gap:16px}
 .game h2{margin:0;text-align:center}
+.game .tipo{margin:-8px 0 0;text-align:center;color:var(--text)}
 .grid6{display:grid;gap:6px}
 .fila{display:grid;gap:6px}
 .cel{width:min(13vw,56px);aspect-ratio:1;border:2px solid var(--line);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-weight:700;font-size:min(7vw,28px);background:#fff;text-transform:uppercase}
@@ -18,9 +19,9 @@
 .cel.g{background:#8A8DA0;border-color:#8A8DA0;color:#fff}
 .cel.flip{animation:flip .45s ease both}
 @keyframes flip{0%{transform:rotateX(0)}50%{transform:rotateX(90deg)}100%{transform:rotateX(0)}}
-.fila.shake{animation:sh .35s}
+.shake{animation:sh .35s}
 @keyframes sh{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
-@media (prefers-reduced-motion:reduce){.cel.flip,.fila.shake{animation:none}}
+@media (prefers-reduced-motion:reduce){.cel.flip,.shake{animation:none}}
 .kb{display:flex;flex-direction:column;gap:6px;width:100%}
 .kb div{display:flex;gap:5px;justify-content:center}
 .kb button{font:inherit;font-weight:700;flex:1;max-width:44px;height:52px;border-radius:8px;border:0;background:#E4E1EF;color:var(--ink);cursor:pointer;padding:0}
@@ -30,12 +31,58 @@
 .kb button.g{background:#8A8DA0;color:#fff}
 .msg{min-height:1.6em;font-weight:700;text-align:center}
 .fin{background:var(--soft);border-radius:14px;padding:16px 20px;text-align:center;width:100%}
-.fin b{font-family:var(--serif);font-size:24px;letter-spacing:.08em}
+.fin b.sol{font-family:var(--serif);font-size:24px;letter-spacing:.08em}
+/* Conexiones */
+.cx{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:100%}
+.cx button{font:inherit;font-weight:700;font-size:clamp(12px,3.2vw,16px);line-height:1.15;min-height:72px;border:0;border-radius:10px;background:#ECEAF3;color:var(--ink);cursor:pointer;padding:6px;hyphens:auto;-webkit-hyphens:auto;overflow-wrap:break-word}
+.cx button.sel{background:#4A4E69;color:#fff}
+.cx .gr{grid-column:1/-1;border-radius:10px;padding:12px;text-align:center}
+.cx .gr b{display:block;font-size:16px;text-transform:uppercase;letter-spacing:.04em}
+.cx .gr span{font-size:15px}
+.g0{background:#F2D86B}.g1{background:#A7D08C}.g2{background:#A9C4EB}.g3{background:#C7A8DC}
+.vidas{display:flex;gap:8px;align-items:center}
+.vidas i{width:12px;height:12px;border-radius:50%;background:#4A4E69;display:inline-block}
+.vidas i.off{background:var(--line)}
+/* Sopa */
+.sopa{display:grid;gap:3px;width:100%;max-width:520px;touch-action:none;user-select:none;-webkit-user-select:none}
+.sopa span{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:clamp(13px,4vw,20px);border-radius:6px;background:#fff;border:1px solid var(--line2);cursor:pointer}
+.sopa span.ini{background:#4A4E69;color:#fff}
+.sopa span.ok{background:#A7D08C}
+.lista{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.lista span{padding:6px 12px;border-radius:20px;background:#ECEAF3;font-weight:700}
+.lista span.ok{background:#A7D08C;text-decoration:line-through}
+/* Crucigrama */
+.cru{display:grid;gap:2px;background:var(--ink);padding:2px;border-radius:6px;width:100%;max-width:440px}
+.cru span{aspect-ratio:1;background:#fff;position:relative;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:clamp(14px,4.5vw,24px);cursor:pointer;text-transform:uppercase}
+.cru span.x{background:var(--ink);cursor:default}
+.cru span.pal{background:#DCE6F7}
+.cru span.cur{background:#F2D86B}
+.cru span.mal{color:var(--bad)}
+.cru span.bien{color:#2E6B2A}
+.cru span i{position:absolute;top:1px;left:3px;font-size:clamp(8px,2vw,11px);font-style:normal;font-weight:600}
+.clue{width:100%;background:#DCE6F7;border-radius:10px;padding:10px 14px;font-weight:700;min-height:48px;display:flex;align-items:center;gap:10px}
+.clue button{flex:none}
+.pls{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:6px 20px}
+.pls h3{margin:0 0 4px;font-size:16px}
+.pls p{margin:0 0 4px;cursor:pointer;font-size:15px}
+.pls p.cur{font-weight:700}
+@media (max-width:560px){.pls{grid-template-columns:1fr}}
+/* Pista a pista */
+.pp{width:100%;display:flex;flex-direction:column;gap:8px}
+.pp div{border-radius:10px;padding:12px 14px;background:#ECEAF3;font-size:17px}
+.pp div.off{background:#F6F5F9;color:#9C98B5}
+.pp div b{margin-right:8px}
+.adiv{display:flex;gap:8px;width:100%}
+.adiv input{flex:1}
+.errs{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.errs span{padding:4px 10px;border-radius:16px;background:var(--bad-bg);color:var(--bad);font-weight:700;text-decoration:line-through}
+.botones{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
 </style>
 </head>
 <body>
 <script type="module">
-import { iniciar, db, F, esc, $, leerClases, finClase, normal } from "./app.js";
+import { iniciar, db, F, esc, $, leerClases, finClase } from "./app.js";
+import { normal, TIPOS, tipoDe, rng, barajar, armarSopa, armarCrucigrama } from "./juegos.js";
 
 iniciar({ area: "estudiantes", activo: "", titulo: "Tercer tiempo" }, async (user, main) => {
   const clases = await leerClases(), ahora = Date.now();
@@ -46,58 +93,191 @@ iniciar({ area: "estudiantes", activo: "", titulo: "Tercer tiempo" }, async (use
   }
   if(!juego){ main.innerHTML = '<div class="card game"><h2>Todavía no hay juego</h2><p class="empty">El juego de cada clase se habilita cuando termina la clase.</p><a class="btn" href="index.html">Volver al inicio</a></div>'; return; }
 
-  const P = juego.palabra, L = P.length, rid = jid + "_" + user.uid;
-  let intentos = [], terminado = false, gano = false, actual = "";
-  try{ const d = await F.getDoc(F.doc(db, "jugadas", rid)); if(d.exists()){ intentos = d.data().intentos || []; terminado = d.data().terminado; gano = d.data().gano; } }catch(e){}
+  const tipo = tipoDe(juego), rid = jid + "_" + user.uid;
+  const S = { intentos: [], terminado: false, gano: false };
+  try{ const d = await F.getDoc(F.doc(db, "jugadas", rid)); if(d.exists()) Object.assign(S, { intentos: d.data().intentos || [], terminado: d.data().terminado, gano: d.data().gano }); }catch(e){}
 
-  function evaluar(g){
-    const r = Array(L).fill("g"), resto = {};
-    for(let i = 0; i < L; i++){ if(g[i] === P[i]) r[i] = "v"; else resto[P[i]] = (resto[P[i]] || 0) + 1; }
-    for(let i = 0; i < L; i++){ if(r[i] !== "v" && resto[g[i]]){ r[i] = "a"; resto[g[i]]--; } }
-    return r;
+  main.innerHTML = `<div class="card game"><h2>Clase ${juego.n}: ${esc(juego.titulo)}</h2><p class="tipo"><b>${TIPOS[tipo].nombre}.</b> ${esc(juego.tema && tipo === "sopa" ? "Tema: " + juego.tema : TIPOS[tipo].desc)}</p><div id="zona" style="width:100%;display:flex;flex-direction:column;align-items:center;gap:16px"></div><div class="msg" id="msg" role="status"></div><div id="fin" style="width:100%"></div></div>`;
+  const Z = $("#zona"), msg = t => $("#msg").textContent = t || "";
+  const sacudir = el => { el.classList.remove("shake"); el.offsetWidth; el.classList.add("shake"); };
+  let onKey = null;
+  document.addEventListener("keydown", e => {
+    if(!onKey || e.ctrlKey || e.metaKey || e.altKey || e.target.matches("input,textarea")) return;
+    if(e.key === "Enter") onKey("ENTER"); else if(e.key === "Backspace") onKey("DEL");
+    else if(e.key.startsWith("Arrow")) { onKey(e.key); e.preventDefault(); }
+    else { const k = e.key.toUpperCase() === "Ñ" ? "Ñ" : normal(e.key); if(k.length === 1) onKey(k); }
+  });
+  async function guardar(){
+    try{ await F.setDoc(F.doc(db, "jugadas", rid), { juego: jid, uid: user.uid, intentos: S.intentos, gano: S.gano, terminado: S.terminado, hora: F.serverTimestamp() }); }
+    catch(e){ console.error(e); msg("No se pudo guardar el avance."); }
+  }
+  function fin(html){
+    const nota = juego.pista && tipo === "palabra" ? `<p style="margin:10px 0 0">${esc(juego.pista)}</p>` : "";
+    $("#fin").innerHTML = `<div class="fin">${html}${nota}<div class="row" style="justify-content:center;margin-top:14px"><a class="btn" href="index.html">Volver al inicio</a></div></div>`;
   }
   const FILAS = ["QWERTYUIOP", "ASDFGHJKLÑ", "ZXCVBNM"];
-  main.innerHTML = `<div class="card game"><h2>Clase ${juego.n}: ${esc(juego.titulo)}</h2>
-    <div class="grid6" id="g"></div><div class="msg" id="msg" role="status"></div><div id="fin" style="width:100%"></div>
-    <div class="kb" id="kb">${FILAS.map((f, i) => `<div>${i === 2 ? '<button class="w" data-k="ENTER" type="button">Enviar</button>' : ""}${[...f].map(k => `<button data-k="${k}" type="button">${k}</button>`).join("")}${i === 2 ? '<button class="w" data-k="DEL" type="button" aria-label="Borrar">⌫</button>' : ""}</div>`).join("")}</div></div>`;
+  const teclado = () => `<div class="kb" id="kb">${FILAS.map((f, i) => `<div>${i === 2 ? '<button class="w" data-k="ENTER" type="button">Enviar</button>' : ""}${[...f].map(k => `<button data-k="${k}" type="button">${k}</button>`).join("")}${i === 2 ? '<button class="w" data-k="DEL" type="button" aria-label="Borrar">⌫</button>' : ""}</div>`).join("")}</div>`;
 
-  function pintar(anim){
-    const est = {};
-    $("#g").innerHTML = Array.from({ length: 6 }, (_, f) => {
-      const g = intentos[f], ev = g ? evaluar(g) : null, txt = g || (f === intentos.length && !terminado ? actual : "");
-      if(ev) [...g].forEach((ch, i) => { const o = { v: 3, a: 2, g: 1 }; if(!est[ch] || o[ev[i]] > o[est[ch]]) est[ch] = ev[i]; });
-      return `<div class="fila" id="f${f}" style="grid-template-columns:repeat(${L},auto)">${Array.from({ length: L }, (_, i) => `<span class="cel ${ev ? ev[i] : txt[i] ? "lleno" : ""}${ev && anim === f ? " flip" : ""}"${ev && anim === f ? ` style="animation-delay:${i * .12}s"` : ""}>${txt[i] || ""}</span>`).join("")}</div>`;
-    }).join("");
-    $("#kb").querySelectorAll("[data-k]").forEach(b => { b.className = (b.classList.contains("w") ? "w " : "") + (est[b.dataset.k] || ""); });
-    if(terminado){
-      $("#kb").hidden = true;
-      $("#fin").innerHTML = `<div class="fin">${gano ? `<p style="margin:0 0 6px;font-size:20px;font-weight:700">¡Bien! La adivinaste en ${intentos.length} ${intentos.length === 1 ? "intento" : "intentos"}.</p>` : `<p style="margin:0 0 6px">La palabra era</p><b>${esc(P)}</b>`}
-        ${juego.pista ? `<p style="margin:10px 0 0">${esc(juego.pista)}</p>` : ""}<div class="row" style="justify-content:center;margin-top:14px"><a class="btn" href="index.html">Volver al inicio</a></div></div>`;
+  // ---------- Palabra ----------
+  function palabra(){
+    const P = juego.palabra, L = P.length; let actual = "";
+    const evaluar = g => { const r = Array(L).fill("g"), resto = {}; for(let i = 0; i < L; i++){ if(g[i] === P[i]) r[i] = "v"; else resto[P[i]] = (resto[P[i]] || 0) + 1; } for(let i = 0; i < L; i++){ if(r[i] !== "v" && resto[g[i]]){ r[i] = "a"; resto[g[i]]--; } } return r; };
+    Z.innerHTML = `<div class="grid6" id="g"></div>${teclado()}`;
+    function pintar(anim){
+      const est = {};
+      $("#g").innerHTML = Array.from({ length: 6 }, (_, f) => {
+        const g = S.intentos[f], ev = g ? evaluar(g) : null, txt = g || (f === S.intentos.length && !S.terminado ? actual : "");
+        if(ev) [...g].forEach((ch, i) => { const o = { v: 3, a: 2, g: 1 }; if(!est[ch] || o[ev[i]] > o[est[ch]]) est[ch] = ev[i]; });
+        return `<div class="fila" id="f${f}" style="grid-template-columns:repeat(${L},auto)">${Array.from({ length: L }, (_, i) => `<span class="cel ${ev ? ev[i] : txt[i] ? "lleno" : ""}${ev && anim === f ? " flip" : ""}"${ev && anim === f ? ` style="animation-delay:${i * .12}s"` : ""}>${txt[i] || ""}</span>`).join("")}</div>`;
+      }).join("");
+      $("#kb").querySelectorAll("[data-k]").forEach(b => { b.className = (b.classList.contains("w") ? "w " : "") + (est[b.dataset.k] || ""); });
+      if(S.terminado){ $("#kb").hidden = true; fin(S.gano ? `<p style="margin:0;font-size:20px;font-weight:700">¡Bien! La adivinaste en ${S.intentos.length} ${S.intentos.length === 1 ? "intento" : "intentos"}.</p>` : `<p style="margin:0 0 6px">La palabra era</p><b class="sol">${esc(P)}</b>`); }
     }
+    onKey = async k => {
+      if(S.terminado) return; msg();
+      if(k === "DEL"){ actual = actual.slice(0, -1); return pintar(); }
+      if(k === "ENTER"){
+        if(actual.length < L){ msg(`La palabra tiene ${L} letras.`); return sacudir($("#f" + S.intentos.length)); }
+        S.intentos.push(actual); actual = ""; S.gano = S.intentos[S.intentos.length - 1] === P; S.terminado = S.gano || S.intentos.length >= 6;
+        pintar(S.intentos.length - 1); return guardar();
+      }
+      if(/^[A-ZÑ]$/.test(k) && actual.length < L){ actual += k; pintar(); }
+    };
+    $("#kb").addEventListener("click", e => { const b = e.target.closest("[data-k]"); if(b) onKey(b.dataset.k); });
+    pintar();
   }
-  async function guardar(){
-    try{ await F.setDoc(F.doc(db, "jugadas", rid), { juego: jid, uid: user.uid, intentos, gano, terminado, hora: F.serverTimestamp() }); }
-    catch(e){ console.error(e); $("#msg").textContent = "No se pudo guardar el intento."; }
-  }
-  async function tecla(k){
-    if(terminado) return;
-    $("#msg").textContent = "";
-    if(k === "DEL"){ actual = actual.slice(0, -1); return pintar(); }
-    if(k === "ENTER"){
-      if(actual.length < L){ $("#msg").textContent = `La palabra tiene ${L} letras.`; const f = $("#f" + intentos.length); f.classList.remove("shake"); f.offsetWidth; f.classList.add("shake"); return; }
-      intentos.push(actual); actual = "";
-      gano = intentos[intentos.length - 1] === P; terminado = gano || intentos.length >= 6;
-      pintar(intentos.length - 1); await guardar(); return;
+
+  // ---------- Conexiones ----------
+  function conexiones(){
+    const G = juego.grupos, clave = it => G.findIndex(g => g.items.includes(it));
+    const todos = barajar(G.flatMap(g => g.items), rng(jid));
+    let sel = [];
+    const resueltos = () => S.intentos.map(s => s.split("|")).filter(a => new Set(a.map(clave)).size === 1).map(a => clave(a[0]));
+    const errores = () => S.intentos.length - resueltos().length;
+    function pintar(){
+      const R = resueltos(), libres = todos.filter(t => !R.includes(clave(t)) && !(S.terminado && !S.gano));
+      const orden = S.terminado && !S.gano ? [...R, ...[0, 1, 2, 3].filter(i => !R.includes(i))] : R;
+      Z.innerHTML = `<div class="cx" id="cx">${orden.map(i => `<div class="gr g${i}"><b>${esc(G[i].nombre)}</b><span>${G[i].items.map(esc).join(" · ")}</span></div>`).join("")}${libres.map(t => `<button type="button" class="${sel.includes(t) ? "sel" : ""}" data-t="${esc(t)}">${esc(t)}</button>`).join("")}</div>
+        ${S.terminado ? "" : `<div class="vidas">Errores disponibles: ${[0, 1, 2, 3].map(i => `<i class="${i < 4 - errores() ? "" : "off"}"></i>`).join("")}</div>
+        <div class="botones"><button class="btn" type="button" id="mez">Mezclar</button><button class="btn" type="button" id="des"${sel.length ? "" : " disabled"}>Deseleccionar</button><button class="btn primary" type="button" id="env"${sel.length === 4 ? "" : " disabled"}>Enviar</button></div>`}`;
+      Z.querySelectorAll("[data-t]").forEach(b => b.onclick = () => { if(S.terminado) return; const t = b.dataset.t; sel = sel.includes(t) ? sel.filter(x => x !== t) : sel.length < 4 ? [...sel, t] : sel; msg(); pintar(); });
+      if(S.terminado){ fin(S.gano ? `<p style="margin:0;font-size:20px;font-weight:700">¡Bien! Armaste los 4 grupos${errores() ? ` con ${errores()} ${errores() === 1 ? "error" : "errores"}` : " sin errores"}.</p>` : `<p style="margin:0;font-size:18px;font-weight:700">Esta vez no salió. Arriba están los 4 grupos.</p>`); return; }
+      $("#mez").onclick = () => { todos.splice(0, todos.length, ...barajar(todos, Math.random)); pintar(); };
+      $("#des").onclick = () => { sel = []; pintar(); };
+      $("#env").onclick = async () => {
+        const s = [...sel].sort().join("|");
+        if(S.intentos.includes(s)){ msg("Ya probaste esa combinación."); return; }
+        S.intentos.push(s);
+        const cuenta = {}; sel.forEach(t => cuenta[clave(t)] = (cuenta[clave(t)] || 0) + 1);
+        const max = Math.max(...Object.values(cuenta));
+        sel = [];
+        if(max === 4) msg("¡Grupo encontrado!"); else msg(max === 3 ? "¡Casi! Te falta uno." : "No es un grupo.");
+        S.gano = resueltos().length === 4; S.terminado = S.gano || errores() >= 4;
+        pintar(); if(max < 4 && !S.terminado) sacudir($("#cx"));
+        await guardar();
+      };
     }
-    if(/^[A-ZÑ]$/.test(k) && actual.length < L){ actual += k; pintar(); }
+    pintar();
   }
-  $("#kb").addEventListener("click", e => { const b = e.target.closest("[data-k]"); if(b) tecla(b.dataset.k); });
-  document.addEventListener("keydown", e => {
-    if(e.ctrlKey || e.metaKey || e.altKey) return;
-    if(e.key === "Enter") tecla("ENTER"); else if(e.key === "Backspace") tecla("DEL");
-    else { const k = normal(e.key); if(k.length === 1 || e.key.toUpperCase() === "Ñ") tecla(e.key.toUpperCase() === "Ñ" ? "Ñ" : k); }
-  });
-  pintar();
+
+  // ---------- Sopa de letras ----------
+  function sopa(){
+    const T = armarSopa(juego.palabras, jid);
+    if(!T){ Z.innerHTML = '<p class="empty">No se pudo armar la sopa de letras.</p>'; return; }
+    let ini = null;
+    const celdas = w => { const [r0, c0, r1, c1] = T.pos[w], dr = Math.sign(r1 - r0), dc = Math.sign(c1 - c0), out = []; for(let i = 0; i < w.length; i++) out.push((r0 + dr * i) * T.N + c0 + dc * i); return out; };
+    function pintar(){
+      const ok = new Set((S.terminado ? T.palabras : S.intentos).flatMap(celdas));
+      Z.innerHTML = `<div class="sopa" id="sp" style="grid-template-columns:repeat(${T.N},1fr)">${T.grilla.join("").split("").map((ch, i) => `<span data-i="${i}" class="${ok.has(i) ? "ok" : ""}${ini === i ? " ini" : ""}">${ch}</span>`).join("")}</div>
+        <div class="lista">${T.palabras.map(w => `<span class="${S.intentos.includes(w) ? "ok" : ""}">${w}</span>`).join("")}</div>
+        ${S.terminado ? "" : `<p class="muted" style="margin:0;text-align:center">Tocá la primera letra y después la última de cada palabra.</p><button class="btn" type="button" id="rend">Me rindo</button>`}`;
+      Z.querySelectorAll("[data-i]").forEach(s => s.onclick = () => tocar(+s.dataset.i));
+      if(S.terminado){ fin(S.gano ? `<p style="margin:0;font-size:20px;font-weight:700">¡Bien! Encontraste las ${T.palabras.length} palabras.</p>` : `<p style="margin:0;font-size:18px;font-weight:700">Encontraste ${S.intentos.length} de ${T.palabras.length}. Arriba están todas marcadas.</p>`); return; }
+      $("#rend").onclick = async () => { S.terminado = true; S.gano = false; pintar(); await guardar(); };
+    }
+    async function tocar(i){
+      if(S.terminado) return; msg();
+      if(ini === null || ini === i){ ini = ini === i ? null : i; return pintar(); }
+      const a = [Math.floor(ini / T.N), ini % T.N], b = [Math.floor(i / T.N), i % T.N]; ini = null;
+      const w = T.palabras.find(w => { const [r0, c0, r1, c1] = T.pos[w]; return (r0 === a[0] && c0 === a[1] && r1 === b[0] && c1 === b[1]) || (r0 === b[0] && c0 === b[1] && r1 === a[0] && c1 === a[1]); });
+      if(!w){ msg("Ahí no hay ninguna palabra."); pintar(); return; }
+      if(S.intentos.includes(w)){ pintar(); return; }
+      S.intentos.push(w); S.gano = S.intentos.length === T.palabras.length; S.terminado = S.gano;
+      msg(S.gano ? "" : `¡${w}!`); pintar(); await guardar();
+    }
+    pintar();
+  }
+
+  // ---------- Mini crucigrama ----------
+  function crucigrama(){
+    const X = armarCrucigrama(juego.palabras);
+    if(!X){ Z.innerHTML = '<p class="empty">No se pudo armar el crucigrama.</p>'; return; }
+    const sol = X.grilla.join(""), C = X.cols;
+    let val = (S.intentos[0] && S.intentos[0].length === sol.length ? S.intentos[0] : sol.replace(/[^#]/g, " ")).split("");
+    let cur = X.palabras[0], pos = cur.r * C + cur.c, revisar = false;
+    const celdas = p => Array.from({ length: p.w.length }, (_, i) => (p.r + (p.d === "v" ? i : 0)) * C + p.c + (p.d === "h" ? i : 0));
+    const numDe = {}; X.palabras.forEach(p => numDe[p.r * C + p.c] = p.num);
+    const enCelda = (i, d) => X.palabras.find(p => p.d === d && celdas(p).includes(i));
+    function pintar(){
+      if(S.terminado) val = sol.split("");
+      const cs = new Set(celdas(cur));
+      Z.innerHTML = `<div class="cru" style="grid-template-columns:repeat(${C},1fr)">${sol.split("").map((ch, i) => ch === "#" ? '<span class="x"></span>' : `<span data-i="${i}" class="${i === pos && !S.terminado ? "cur" : cs.has(i) && !S.terminado ? "pal" : ""}${(revisar || S.terminado) && val[i] !== " " ? (val[i] === ch ? " bien" : " mal") : ""}">${numDe[i] ? `<i>${numDe[i]}</i>` : ""}${val[i] === " " ? "" : val[i]}</span>`).join("")}</div>
+        ${S.terminado ? "" : `<div class="clue"><span style="flex:1">${cur.num} ${cur.d === "h" ? "horizontal" : "vertical"}: ${esc(cur.pista)}</span></div>${teclado()}<div class="botones"><button class="btn" type="button" id="rev">Revisar</button><button class="btn" type="button" id="rend">Ver la solución</button></div>`}
+        <div class="pls">${["h", "v"].map(d => `<div><h3>${d === "h" ? "Horizontales" : "Verticales"}</h3>${X.palabras.filter(p => p.d === d).map(p => `<p data-p="${X.palabras.indexOf(p)}" class="${p === cur && !S.terminado ? "cur" : ""}"><b>${p.num}.</b> ${esc(p.pista)}</p>`).join("")}</div>`).join("")}</div>`;
+      Z.querySelectorAll("[data-i]").forEach(s => s.onclick = () => { const i = +s.dataset.i; if(S.terminado) return; if(i === pos){ const otra = enCelda(i, cur.d === "h" ? "v" : "h"); if(otra) cur = otra; } else { pos = i; cur = enCelda(i, cur.d) || enCelda(i, cur.d === "h" ? "v" : "h"); } pintar(); });
+      Z.querySelectorAll("[data-p]").forEach(p => p.onclick = () => { if(S.terminado) return; cur = X.palabras[+p.dataset.p]; pos = celdas(cur).find(i => val[i] === " ") ?? celdas(cur)[0]; pintar(); });
+      if(S.terminado){ fin(S.gano ? `<p style="margin:0;font-size:20px;font-weight:700">¡Bien! Completaste el crucigrama.</p>` : `<p style="margin:0;font-size:18px;font-weight:700">Arriba está la solución.</p>`); return; }
+      $("#kb").addEventListener("click", e => { const b = e.target.closest("[data-k]"); if(b) onKey(b.dataset.k); });
+      $("#rev").onclick = () => { revisar = true; pintar(); };
+      $("#rend").onclick = async () => { S.terminado = true; S.gano = false; S.intentos = [val.join("")]; pintar(); await guardar(); };
+    }
+    let timer = null;
+    const guardarLuego = () => { clearTimeout(timer); timer = setTimeout(() => { S.intentos = [val.join("")]; guardar(); }, 1200); };
+    onKey = async k => {
+      if(S.terminado) return; msg(); revisar = false;
+      const cs = celdas(cur), j = cs.indexOf(pos);
+      if(k.startsWith("Arrow")){
+        const d = { ArrowRight: [0, 1], ArrowLeft: [0, -1], ArrowDown: [1, 0], ArrowUp: [-1, 0] }[k];
+        let r = Math.floor(pos / C) + d[0], c = pos % C + d[1];
+        while(r >= 0 && r < X.filas && c >= 0 && c < C && sol[r * C + c] === "#"){ r += d[0]; c += d[1]; }
+        if(r >= 0 && r < X.filas && c >= 0 && c < C){ pos = r * C + c; cur = enCelda(pos, d[0] ? "v" : "h") || enCelda(pos, d[0] ? "h" : "v"); }
+        return pintar();
+      }
+      if(k === "DEL"){ if(val[pos] === " " && j > 0) pos = cs[j - 1]; val[pos] = " "; pintar(); return guardarLuego(); }
+      if(k === "ENTER"){ const i = (X.palabras.indexOf(cur) + 1) % X.palabras.length; cur = X.palabras[i]; pos = celdas(cur)[0]; return pintar(); }
+      if(!/^[A-ZÑ]$/.test(k)) return;
+      val[pos] = k;
+      if(j < cs.length - 1) pos = cs[j + 1];
+      else { const sig = X.palabras.slice(X.palabras.indexOf(cur) + 1).find(p => celdas(p).some(i => val[i] === " ")); if(sig){ cur = sig; pos = celdas(sig).find(i => val[i] === " "); } }
+      if(val.join("") === sol){ S.gano = true; S.terminado = true; S.intentos = [sol]; pintar(); clearTimeout(timer); return guardar(); }
+      pintar(); guardarLuego();
+    };
+    pintar();
+  }
+
+  // ---------- Pista a pista ----------
+  function pistas(){
+    const nr = s => String(s || "").toUpperCase().normalize("NFD").replace(/N\u0303/g, "Ñ").replace(/[\u0300-\u036f]/g, "").replace(/[^A-ZÑ0-9]/g, "");
+    const P = juego.pistas, ok = [juego.respuesta, ...(juego.aceptadas || [])].map(nr);
+    function pintar(){
+      const ver = S.terminado ? P.length : Math.min(P.length, S.intentos.length + 1);
+      const malos = S.intentos.filter(g => !ok.includes(nr(g)));
+      Z.innerHTML = `<div class="pp">${P.map((p, i) => `<div class="${i < ver ? "" : "off"}"><b>${i + 1}</b>${i < ver ? esc(p) : "…"}</div>`).join("")}</div>
+        ${malos.length ? `<div class="errs">${malos.map(g => `<span>${esc(g)}</span>`).join("")}</div>` : ""}
+        ${S.terminado ? "" : `<form class="adiv" id="fa"><input type="text" id="gu" placeholder="Tu respuesta" aria-label="Tu respuesta" autocomplete="off" maxlength="60"><button class="btn primary" type="submit">Adivinar</button></form>`}`;
+      if(S.terminado){ fin(S.gano ? `<p style="margin:0;font-size:20px;font-weight:700">¡Bien! Lo adivinaste con ${S.intentos.length} ${S.intentos.length === 1 ? "pista" : "pistas"}.</p><p style="margin:8px 0 0">Era <b>${esc(juego.respuesta)}</b>.</p>` : `<p style="margin:0 0 6px">La respuesta era</p><b class="sol">${esc(juego.respuesta)}</b>`); return; }
+      $("#fa").onsubmit = async e => {
+        e.preventDefault(); const g = $("#gu").value.trim(); if(!g) return;
+        if(S.intentos.some(x => nr(x) === nr(g))){ msg("Ya probaste esa respuesta."); return; }
+        S.intentos.push(g); S.gano = ok.includes(nr(g)); S.terminado = S.gano || S.intentos.length >= P.length;
+        msg(S.gano || S.terminado ? "" : "No es eso. Ahí va otra pista."); pintar(); if(!S.terminado) $("#gu").focus(); await guardar();
+      };
+      $("#gu").focus();
+    }
+    pintar();
+  }
+
+  ({ palabra, conexiones, sopa, crucigrama, pistas })[tipo]();
 });
 </script>
 </body>
