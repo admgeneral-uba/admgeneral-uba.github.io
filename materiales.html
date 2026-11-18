@@ -7,7 +7,8 @@
 <link rel="icon" href="img/uba.png">
 <link rel="stylesheet" href="sitio.css">
 <style>
-.unit h2{display:flex;gap:12px;align-items:baseline}
+.unit>summary h2{display:flex;gap:12px;align-items:baseline;margin:0}
+.unit[open]>summary{margin-bottom:6px}
 .unit h2 .num{color:var(--live-ink);min-width:40px}
 .unit h3{margin:20px 0 10px;font-size:18px}
 .it{display:flex;gap:14px;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid var(--line2)}
@@ -20,12 +21,14 @@
 </head>
 <body>
 <script type="module">
-import { iniciar, db, F, esc, toast, UNIDADES, leerClases, leerUnidades, leerMiDoc, esUrl, claseTerminada, botonToggle, ICON, CURSO_INFO } from "./app.js";
+import { iniciar, db, F, esc, toast, UNIDADES, leerClases, leerUnidades, leerMiDoc, esUrl, claseTerminada, botonToggle, ICON, CURSO_INFO, hoyISO } from "./app.js";
 
 iniciar({ area: "estudiantes", activo: "Materiales", titulo: "Materiales" }, async (user, main) => {
   const [clases, unidades, mio] = await Promise.all([leerClases(), leerUnidades(), leerMiDoc(user.uid)]);
   const vistos = { ...(mio.vistos || {}) };
   const abrir = (url, txt = "Abrir") => esUrl(url) ? `<a class="btn small" href="${esc(url)}" target="_blank" rel="noopener">${txt}</a>` : "";
+  const prox = clases.find(c => c.fecha >= hoyISO()) || clases[clases.length - 1];
+  const abierta = prox && prox.unidad ? prox.unidad : "I";
   const tog = (k, label) => `<span data-k="${esc(k)}">${botonToggle(label, !!vistos[k])}</span>`;
 
   const bloques = UNIDADES.map(u => {
@@ -33,14 +36,14 @@ iniciar({ area: "estudiantes", activo: "Materiales", titulo: "Materiales" }, asy
     const cs = clases.filter(c => c.unidad === u);
     const lect = d.lecturas || [], rec = d.recomendaciones || [];
     if(!cs.length && !lect.length && !rec.length) return "";
-    return `<section class="card unit"><h2><span class="num">${u}</span>${esc(d.nombre)}</h2>
+    return `<details class="card unit fold"${u === abierta ? " open" : ""}><summary><h2><span class="num">${u}</span>${esc(d.nombre)}</h2><span class="chev" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></span></summary>
       ${cs.length ? `<h3>Presentaciones</h3>${cs.map(c => {
         const ok = claseTerminada(c.fecha) && esUrl(c.presentacion);
         return `<div class="it"><div class="tx"><b>Presentación de la clase ${c.n}</b></div><div class="ac">${ok ? abrir(c.presentacion, "Abrir PDF") : '<button class="btn small" type="button" disabled>Abrir PDF</button>'}</div></div>`;
       }).join("")}` : ""}
       ${lect.length ? `<h3>Lecturas</h3>${lect.map((l, i) => `<div class="it"><div class="tx">${esc(l.cita)}</div><div class="ac">${abrir(l.url)}${tog(`${u}-l${i}`, "Leída")}</div></div>`).join("")}` : ""}
       ${rec.length ? `<h3>Recomendaciones</h3>${rec.map((r, i) => `<div class="it"><div class="tx"><b>${esc(r.titulo)}</b>${r.descripcion ? `<p>${esc(r.descripcion)}</p>` : ""}</div><div class="ac">${abrir(r.url)}${tog(`${u}-r${i}`, "Visto")}</div></div>`).join("")}` : ""}
-    </section>`;
+    </details>`;
   }).join("");
 
   main.innerHTML = (bloques || '<div class="card"><p class="empty">Todavía no hay materiales cargados.</p></div>')

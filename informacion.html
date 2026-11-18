@@ -47,12 +47,13 @@ import { iniciar, db, F, esc, esUrl } from "./app.js";
 
 const DOCS = [["normas", "Normas del curso"], ["programa", "Programa de la cátedra"], ["cronograma", "Cronograma de clases"], ["tp1", "Consigna del TP n.° 1"], ["tp2", "Consigna del TP n.° 2"], ["modelo", "Modelo de examen"]];
 const FAQ = [
-  ["¿Qué pasa si no llego al 75 % de asistencia?", "Quedás en condición de “ausente” en la materia, aunque hayas aprobado los parciales. Esto vale tanto para las clases presenciales como para las virtuales."],
+  ["¿Qué pasa si no llego al 75 % de asistencia?", "Quedás en condición de “ausente” en la materia. Esto vale tanto para las clases presenciales como para las virtuales."],
   ["¿Puedo usar el recuperatorio para mejorar una nota?", "Sí. El recuperatorio sirve para rendir un parcial desaprobado o uno cuya nota quieras mejorar. Tené en cuenta que su nota reemplaza siempre a la del parcial, aunque sea más baja."],
-  ["¿Cómo se aprueba el trabajo práctico?", "Es grupal y tiene dos partes: un documento escrito y una exposición oral. Se califica como aprobado o reprobado. Si hay que recuperarlo, se corrige con los comentarios de los docentes y se vuelve a entregar en la fecha indicada."],
-  ["¿Cuándo tengo que leer la bibliografía?", "Antes de cada clase. En el cronograma figura qué lectura corresponde a cada encuentro, y las actividades en clase se arman sobre esa lectura."],
+  ["¿Cómo se aprueban los trabajos prácticos?", "Son grupales y tienen dos partes: una entrega escrita y una exposición oral. Se califican como aprobados o reprobados. Si hay que recuperarlo, se corrige con los comentarios de los docentes y se vuelve a entregar en la fecha indicada."],
+  ["¿Cuándo debería leer la bibliografía?", "Antes de cada clase. En el cronograma figura qué lectura corresponde a cada encuentro. Las dinámicas de clase se aprovechan mejor habiendo leído la bibliografía previamente."],
   ["¿Qué nota necesito para promocionar?", "Con 7 o más promocionás. El promedio se redondea para arriba: si entre los dos parciales sumás 13 puntos (por ejemplo, un 6 y un 7), el 6,5 pasa a 7 y promocionás. Con 4 a 6 quedás regular y rendís un examen final. En todos los casos necesitás el 75 % de asistencia y aprobar ambos parciales."],
-  ["¿Qué es la nota concepto?", "Además de los parciales, tenemos en cuenta cómo transitaste la cursada: la asistencia a clase, la participación en las consignas y los trabajos que se destaquen. Todo eso puede mejorar un poco tu nota final. No reemplaza a los parciales: es un reconocimiento al compromiso durante el cuatrimestre."]
+  ["¿Puedo sumar puntos por mi compromiso con la cursada?", "Además de los parciales, tenemos en cuenta cómo transitaste la cursada: la asistencia a clase, la participación en las consignas y los trabajos que se destaquen. Demostrar un rendimiento destacado sostenido durante todo el cuatrimestre puede mejorar un poco tu nota final, o permitirte aprobar en los casos que queden cerca de la promoción (12 puntos entre ambos parciales)."],
+  ["¿Qué es la clase de “entrega de reconocimientos”?", "Es la última clase del cuatrimestre. Nos gusta reconocer a quienes se destacaron durante la cursada: entre todos votamos a compañeras y compañeros en distintas categorías, y los ganadores reciben un premio. Es una forma de cerrar la materia celebrando lo que aprendimos juntos."]
 ];
 const VALORES = [
   ["I", "Aprendemos con una mirada integral.", "Incorporamos conocimientos nuevos y desarrollamos también nuestras habilidades sociales, fundamentales en nuestra profesión para generar un impacto positivo en las organizaciones."],
@@ -68,9 +69,9 @@ iniciar({ area: "estudiantes", activo: "Información", titulo: "Información del
     <section class="card ess"><h2 style="margin-bottom:16px">Lo esencial para aprobar</h2>
       <div class="g">
         <div><span class="k">75 %</span><span><b>Asistencia mínima</b><p>En clases presenciales y virtuales.</p></span></div>
-        <div><span class="k">2</span><span><b>Parciales</b><p>Unidades I a IV y V a VIII. Hay que aprobar ambos.</p></span></div>
+        <div><span class="k">2</span><span><b>Parciales</b><p>Unidades I a IV y V a VIII. Se evalúan conceptos con preguntas de opción múltiple.</p></span></div>
         <div><span class="k">1</span><span><b>Recuperatorio</b><p>Su nota siempre reemplaza a la del parcial.</p></span></div>
-        <div><span class="k">TP</span><span><b>Trabajo práctico grupal</b><p>Escrito y exposición oral.</p></span></div>
+        <div><span class="k">TP</span><span><b>Trabajos prácticos grupales</b><p>Entrega escrita y exposición oral.</p></span></div>
       </div>
       <div class="esc"><div style="background:var(--ok-bg)"><b style="color:var(--ok)">7 a 10</b>Promoción</div><div style="background:var(--soft)"><b>4 a 6</b>Final</div><div style="background:var(--bad-bg)"><b style="color:var(--bad)">0 a 3</b>Insuficiente</div></div>
     </section>

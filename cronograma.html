@@ -8,7 +8,9 @@
 <link rel="stylesheet" href="sitio.css">
 <style>
 .list{display:flex;flex-direction:column;gap:12px}
-.cl{display:grid;grid-template-columns:120px minmax(0,1fr);gap:18px;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px 20px}
+.cl{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:14px 20px}
+.cl>summary{display:grid!important;grid-template-columns:120px minmax(0,1fr) auto;gap:18px;align-items:center}
+.cl .body{padding:10px 0 4px 138px}
 .cl.past{background:var(--gray-bg);border-color:var(--line2)}
 .cl.next{border:2px solid var(--live)}
 .cl .d{font-family:var(--serif);font-weight:700;font-size:20px;line-height:1.15}
@@ -16,7 +18,8 @@
 .cl h2{margin:0;font-size:20px;line-height:1.25}
 .cl ul{margin:6px 0 0;padding-left:20px;color:var(--text)}
 .cl .m{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:4px}
-@media (max-width:640px){.cl{grid-template-columns:1fr;gap:6px}}
+@media (max-width:640px){.cl>summary{grid-template-columns:72px minmax(0,1fr) auto;gap:10px}.cl .d{font-size:18px}.cl .body{padding-left:0}}
+.volver{margin-top:4px}
 </style>
 </head>
 <body>
@@ -28,13 +31,14 @@ iniciar({ area: "estudiantes", activo: "Cronograma", titulo: "Cronograma" }, asy
   const prox = clases.find(c => c.fecha >= hoy);
   main.innerHTML = `<div class="list">${clases.map(c => {
     const d = aFecha(c.fecha), cls = c.fecha < hoy ? "past" : c === prox ? "next" : "";
-    return `<article class="cl ${cls}"${c === prox ? ' id="proxima"' : ""}>
+    return `<details class="cl fold ${cls}"${c === prox ? ' id="proxima" open' : ""}><summary>
       <div class="d">${d.getDate()}/${d.getMonth() + 1}<small>${DIAS[d.getDay()]} · ${esc(c.modalidad)}</small></div>
       <div><div class="m"><span class="muted small">Clase ${c.n}${c.unidad ? " · Unidad " + c.unidad : ""}</span>${tomadas[c.id] ? (pres[c.id] ? '<span class="pill ok">Presente</span>' : '<span class="pill bad">Ausente</span>') : ""}</div>
-        <h2>${esc(c.titulo)}</h2>
-        ${c.temas ? `<ul>${c.temas.split("\n").filter(Boolean).map(t => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}</div>
-    </article>`;
-  }).join("")}</div>`;
+        <h2>${esc(c.titulo)}</h2></div><span class="chev" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></span></summary>
+      ${c.temas ? `<div class="body"><ul>${c.temas.split("\n").filter(Boolean).map(t => `<li>${esc(t)}</li>`).join("")}</ul></div>` : ""}
+    </details>`;
+  }).join("")}</div>
+  <div class="row volver"><a class="btn" href="index.html">Volver al inicio</a></div>`;
   const p = document.getElementById("proxima"); if(p && clases.indexOf(prox) > 2) p.scrollIntoView({ block: "center" });
 });
 </script>
