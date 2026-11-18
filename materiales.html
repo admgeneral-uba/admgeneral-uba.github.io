@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Materiales · Administración General</title>
+<link rel="icon" href="img/uba.png">
+<link rel="stylesheet" href="sitio.css">
+<style>
+.unit h2{display:flex;gap:12px;align-items:baseline}
+.unit h2 .num{color:var(--live-ink);min-width:40px}
+.unit h3{margin:20px 0 10px;font-size:18px}
+.it{display:flex;gap:14px;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid var(--line2)}
+.it:first-of-type{border-top:0}
+.it .tx{flex:1;min-width:0}
+.it .tx p{margin:2px 0 0;color:var(--text);font-size:16px}
+.it .ac{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+@media (max-width:640px){.it{flex-direction:column;align-items:stretch}.it .ac{justify-content:flex-start}}
+</style>
+</head>
+<body>
+<script type="module">
+import { iniciar, db, F, esc, toast, UNIDADES, leerClases, leerUnidades, leerMiDoc, esUrl, claseTerminada, botonToggle, ICON, CURSO_INFO } from "./app.js";
+
+iniciar({ area: "estudiantes", activo: "Materiales", titulo: "Materiales" }, async (user, main) => {
+  const [clases, unidades, mio] = await Promise.all([leerClases(), leerUnidades(), leerMiDoc(user.uid)]);
+  const vistos = { ...(mio.vistos || {}) };
+  const abrir = (url, txt = "Abrir") => esUrl(url) ? `<a class="btn small" href="${esc(url)}" target="_blank" rel="noopener">${txt}</a>` : "";
+  const tog = (k, label) => `<span data-k="${esc(k)}">${botonToggle(label, !!vistos[k])}</span>`;
+
+  const bloques = UNIDADES.map(u => {
+    const d = unidades[u]; if(!d) return "";
+    const cs = clases.filter(c => c.unidad === u);
+    const lect = d.lecturas || [], rec = d.recomendaciones || [];
+    if(!cs.length && !lect.length && !rec.length) return "";
+    return `<section class="card unit"><h2><span class="num">${u}</span>${esc(d.nombre)}</h2>
+      ${cs.length ? `<h3>Presentaciones</h3>${cs.map(c => {
+        const ok = claseTerminada(c.fecha) && esUrl(c.presentacion);
+        return `<div class="it"><div class="tx"><b>Presentación de la clase ${c.n}</b></div><div class="ac">${ok ? abrir(c.presentacion, "Abrir PDF") : '<button class="btn small" type="button" disabled>Abrir PDF</button>'}</div></div>`;
+      }).join("")}` : ""}
+      ${lect.length ? `<h3>Lecturas</h3>${lect.map((l, i) => `<div class="it"><div class="tx">${esc(l.cita)}</div><div class="ac">${abrir(l.url)}${tog(`${u}-l${i}`, "Leída")}</div></div>`).join("")}` : ""}
+      ${rec.length ? `<h3>Recomendaciones</h3>${rec.map((r, i) => `<div class="it"><div class="tx"><b>${esc(r.titulo)}</b>${r.descripcion ? `<p>${esc(r.descripcion)}</p>` : ""}</div><div class="ac">${abrir(r.url)}${tog(`${u}-r${i}`, "Visto")}</div></div>`).join("")}` : ""}
+    </section>`;
+  }).join("");
+
+  main.innerHTML = (bloques || '<div class="card"><p class="empty">Todavía no hay materiales cargados.</p></div>')
+    + (esUrl(CURSO_INFO.driveUrl) && CURSO_INFO.driveUrl !== "https://drive.google.com/" ? `<div class="row"><a class="btn" href="${esc(CURSO_INFO.driveUrl)}" target="_blank" rel="noopener">Carpeta del curso en Drive</a></div>` : "");
+
+  main.querySelectorAll("[data-k]").forEach(w => w.addEventListener("click", async () => {
+    const k = w.dataset.k, b = w.querySelector("button"), on = !vistos[k];
+    vistos[k] = on;
+    b.setAttribute("aria-pressed", on); b.innerHTML = (on ? ICON.check : ICON.circle) + b.textContent;
+    try{ await F.setDoc(F.doc(db, "estudiantes", user.uid), { vistos: { [k]: on } }, { merge: true }); }
+    catch(e){ console.error(e); vistos[k] = !on; b.setAttribute("aria-pressed", !on); b.innerHTML = (!on ? ICON.check : ICON.circle) + b.textContent; toast("No se pudo guardar."); }
+  }));
+});
+</script>
+</body>
+</html>

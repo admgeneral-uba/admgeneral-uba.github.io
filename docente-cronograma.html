@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Cronograma · Área docente</title>
+<link rel="icon" href="img/uba.png">
+<link rel="stylesheet" href="sitio.css">
+<style>
+.tablewrap{overflow-x:auto;margin:0 -6px}
+table{border-collapse:collapse;width:100%;min-width:1020px}
+th{text-align:left;padding:8px 6px;font-size:14px;color:var(--muted);font-weight:700;border-bottom:1px solid var(--line)}
+td{padding:8px 6px;border-bottom:1px solid var(--line2);vertical-align:top}
+td.n{font-weight:700;text-align:center;padding-top:16px;width:40px}
+td input,td select,td textarea{font-size:15px;padding:8px 9px}
+td textarea{min-height:64px}
+tr.past td{background:#FBFAFD}
+.del{font:inherit;font-size:20px;line-height:1;color:var(--muted);background:none;border:0;cursor:pointer;padding:8px}
+.del:hover{color:var(--bad)}
+.savebar{position:sticky;bottom:0;background:rgba(247,245,251,.95);backdrop-filter:blur(4px);border-top:1px solid var(--line);margin:0 -24px -40px;padding:14px 24px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.dirty{color:var(--live-ink);font-weight:700}
+</style>
+</head>
+<body>
+<script type="module">
+import { iniciar, db, F, esc, toast, UNIDADES, hoyISO, $ } from "./app.js";
+import { CLASES_BASE } from "./datos-base.js";
+
+iniciar({ area: "docente", activo: "Cronograma", titulo: "Cronograma", fondo: "intenso" }, async (user, main) => {
+  let rows = [], borrar = new Set(), dirty = false;
+  const snap = await F.getDocs(F.collection(db, "clases"));
+  rows = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => a.n - b.n);
+
+  function marcar(){ dirty = true; const d = $("#dirty"); if(d) d.textContent = "Hay cambios sin guardar"; }
+  window.addEventListener("beforeunload", e => { if(dirty){ e.preventDefault(); e.returnValue = ""; } });
+
+  function draw(){
+    if(!rows.length){
+      main.innerHTML = `<div class="card"><h2>Todavía no hay clases cargadas</h2>
+                <div class="row"><button class="btn primary" id="seed" type="button">Cargar el cronograma base</button><button class="btn" id="blank" type="button">Empezar de cero</button></div></div>`;
+      $("#seed").onclick = async () => {
+        $("#seed").disabled = true;
+        try{ const b = F.writeBatch(db); CLASES_BASE.forEach(c => b.set(F.doc(db, "clases", "c" + String(c.n).padStart(2, "0")), c)); await b.commit(); rows = CLASES_BASE.map(c => ({ id: "c" + String(c.n).padStart(2, "0"), ...c })); toast("Cronograma cargado"); draw(); }
+        catch(e){ console.error(e); toast("No se pudo cargar. Revisá las reglas de Firebase."); $("#seed").disabled = false; }
+      };
+      $("#blank").onclick = () => { rows = [{ id: "", n: 1, fecha: "", modalidad: "Presencial", unidad: "", titulo: "", temas: "" }]; marcar(); draw(); };
+      return;
+    }
+    const hoy = hoyISO();
+    const sel = (v, opts, label) => `<select aria-label="${label}">${opts.map(o => `<option value="${o}"${o === v ? " selected" : ""}>${o || "—"}</option>`).join("")}</select>`;
+    main.innerHTML = `<div class="card">
+      <div class="row between" style="margin-bottom:12px"><h2 style="margin:0">1.° cuatrimestre 2027</h2></div>
+      <div class="tablewrap"><table>
+        <colgroup><col style="width:44px"><col style="width:150px"><col style="width:128px"><col style="width:84px"><col style="width:230px"><col><col style="width:44px"></colgroup>
+        <thead><tr><th style="text-align:center">N.°</th><th>Fecha</th><th>Modalidad</th><th>Unidad</th><th>Título</th><th>Temas (uno por línea)</th><th></th></tr></thead>
+        <tbody>${rows.map((r, i) => `<tr data-i="${i}" class="${r.fecha && r.fecha < hoy ? "past" : ""}">
+          <td class="n">${i + 1}</td>
+          <td><input type="date" data-f="fecha" value="${esc(r.fecha)}" aria-label="Fecha de la clase ${i + 1}"></td>
+          <td>${sel(r.modalidad, ["Presencial", "Virtual"], "Modalidad de la clase " + (i + 1)).replace("<select", '<select data-f="modalidad"')}</td>
+          <td>${sel(r.unidad || "", ["", ...UNIDADES], "Unidad de la clase " + (i + 1)).replace("<select", '<select data-f="unidad"')}</td>
+          <td><input type="text" data-f="titulo" value="${esc(r.titulo)}" maxlength="90" placeholder="Título de la clase" aria-label="Título de la clase ${i + 1}" style="font-weight:700"></td>
+          <td><textarea data-f="temas" rows="3" placeholder="Temas" aria-label="Temas de la clase ${i + 1}">${esc(r.temas)}</textarea></td>
+          <td><button class="del" type="button" data-del="${i}" aria-label="Quitar la clase ${i + 1}" title="Quitar">×</button></td></tr>`).join("")}</tbody>
+      </table></div>
+      <div class="row" style="margin-top:14px"><button class="btn" id="add" type="button">Agregar clase</button></div>
+    </div>
+    <div class="savebar"><span id="dirty" class="dirty">${dirty ? "Hay cambios sin guardar" : ""}</span><button class="btn primary" id="save" type="button">Guardar cambios</button></div>`;
+    main.querySelectorAll("tr[data-i]").forEach(tr => {
+      const r = rows[+tr.dataset.i];
+      tr.querySelectorAll("[data-f]").forEach(el => el.addEventListener("input", () => { r[el.dataset.f] = el.value; marcar(); }));
+    });
+    main.querySelectorAll("[data-del]").forEach(b => b.onclick = () => {
+      const i = +b.dataset.del, r = rows[i];
+      if(!confirm(`¿Quitar la clase ${i + 1}${r.titulo ? " (" + r.titulo + ")" : ""}?`)) return;
+      if(r.id) borrar.add(r.id); rows.splice(i, 1); marcar(); draw();
+    });
+    $("#add").onclick = () => {
+      const last = rows[rows.length - 1];
+      rows.push({ id: "", n: rows.length + 1, fecha: "", modalidad: "Presencial", unidad: last ? last.unidad : "", titulo: "", temas: "" }); marcar(); draw();
+      const inputs = main.querySelectorAll('[data-f="fecha"]'); inputs[inputs.length - 1].focus();
+    };
+    $("#save").onclick = guardar;
+  }
+
+  async function guardar(){
+    const sinFecha = rows.findIndex(r => !r.fecha);
+    if(sinFecha >= 0){ toast(`A la clase ${sinFecha + 1} le falta la fecha.`); return; }
+    // ordenar por fecha y renumerar
+    rows.sort((a, b) => a.fecha.localeCompare(b.fecha));
+    const btn = $("#save"); btn.disabled = true;
+    try{
+      const b = F.writeBatch(db);
+      borrar.forEach(id => b.delete(F.doc(db, "clases", id)));
+      rows.forEach((r, i) => { r.n = i + 1; });
+      const usados = new Set();
+      rows.forEach(r => {
+        const id = r.id || "c" + String(r.n).padStart(2, "0") + "-" + Math.random().toString(36).slice(2, 6);
+        r.id = id; usados.add(id);
+        b.set(F.doc(db, "clases", id), { n: r.n, fecha: r.fecha, modalidad: r.modalidad || "Presencial", unidad: r.unidad || "", titulo: (r.titulo || "").trim(), temas: (r.temas || "").trim(), ...(r.presentacion ? { presentacion: r.presentacion } : {}) });
+      });
+      await b.commit();
+      borrar = new Set(); dirty = false; toast("Cronograma guardado"); draw();
+    }catch(e){ console.error(e); toast("No se pudo guardar. Probá de nuevo."); btn.disabled = false; }
+  }
+  draw();
+});
+</script>
+</body>
+</html>

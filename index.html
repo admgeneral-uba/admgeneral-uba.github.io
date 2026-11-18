@@ -4,26 +4,67 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Administración General</title>
-<link rel="stylesheet" href="estilos.css">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📚</text></svg>">
+<link rel="icon" href="img/uba.png">
+<link rel="stylesheet" href="sitio.css">
+<style>
+.cols{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:24px;align-items:start}
+@media (max-width:860px){.cols{grid-template-columns:1fr}}
+.side{display:flex;flex-direction:column;gap:24px}
+.clase h3{margin:4px 0 6px;font-size:26px;line-height:1.2}
+.clase ul{margin:10px 0 0;padding-left:20px}
+.clase li{margin:3px 0}
+.lect{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px}
+.lect li{display:flex;gap:12px;align-items:flex-start;justify-content:space-between}
+.lect li span{flex:1}
+.live{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.live h2{margin:0}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--live);margin-right:8px;animation:p 1.4s infinite}
+@keyframes p{50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.dot{animation:none}}
+.rec{display:flex;flex-direction:column;gap:12px}
+.rec a{font-weight:700}
+.rec p{margin:2px 0 0;color:var(--text);font-size:16px}
+</style>
 </head>
 <body>
-<div class="wrap">
-  <header><h1 data-curso>Administración General</h1><p data-subtitulo></p></header>
-  <div class="panel">
-    <h2>Asistencia</h2>
-    <p class="muted" style="margin-top:0">Si estás en clase, escaneá el QR de la pantalla o entrá acá y escribí el código.</p>
-    <a class="btn primary" href="asistencia.html">Registrar mi asistencia</a>
-  </div>
-  <div class="panel">
-    <h2>Próximamente</h2>
-    <p class="muted" style="margin:0">Materiales de cada clase, encuestas en vivo, mural y ruleta de nombres.</p>
-  </div>
-  <p class="small" style="margin-top:28px"><a href="docente.html" class="muted">Área docente</a></p>
-</div>
 <script type="module">
-  import { encabezado } from "./firebase.js";
-  encabezado();
+import { iniciar, db, F, esc, leerClases, leerUnidades, larga, hoyISO, esUrl, CURSO_INFO } from "./app.js";
+
+iniciar({ area: "estudiantes", activo: "", titulo: CURSO_INFO.nombre, subtitulo: CURSO_INFO.subtitulo, grande: true }, async (user, main) => {
+  const [clases, unidades] = await Promise.all([leerClases(), leerUnidades()]);
+  const hoy = hoyISO();
+  const actual = clases.find(c => c.fecha >= hoy) || clases[clases.length - 1];
+  const u = actual && actual.unidad ? unidades[actual.unidad] : null;
+  const nombre = (user.displayName || "").split(" ")[0];
+
+  main.innerHTML = `
+    <div id="vivo"></div>
+    <div class="cols">
+      <div class="card clase">
+        ${actual ? `<span class="kick">${actual.fecha === hoy ? "Hoy" : "Próxima clase"}</span>
+          <h3>Clase ${actual.n}: ${esc(actual.titulo)}</h3>
+          <div class="muted">${esc(larga(actual.fecha))} · ${esc(actual.modalidad)}${actual.unidad ? " · Unidad " + actual.unidad : ""}</div>
+          ${actual.temas ? `<ul>${actual.temas.split("\n").filter(Boolean).map(t => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}
+          ${u && u.lecturas && u.lecturas.length ? `<h2 style="margin:22px 0 12px;font-size:20px">Para leer</h2><ul class="lect">${u.lecturas.filter(l => l.tipo !== "Complementaria").map(l => `<li><span>${esc(l.cita)}</span>${esUrl(l.url) ? `<a class="btn small" href="${esc(l.url)}" target="_blank" rel="noopener">Abrir</a>` : ""}</li>`).join("")}</ul>` : ""}`
+        : `<h2>¡Hola${nombre ? ", " + esc(nombre) : ""}!</h2><p class="empty">Pronto vas a ver acá el cronograma de las clases.</p>`}
+      </div>
+      <div class="side">
+        ${u && u.recomendaciones && u.recomendaciones.length ? `<div class="card"><h2>Recomendaciones</h2><div class="rec">${u.recomendaciones.map(r => `<div>${esUrl(r.url) ? `<a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.titulo)}</a>` : `<b>${esc(r.titulo)}</b>`}${r.descripcion ? `<p>${esc(r.descripcion)}</p>` : ""}</div>`).join("")}</div></div>` : ""}
+        <div class="card"><h2>Materiales</h2><div class="row"><a class="btn primary" href="materiales.html">Ver lecturas y presentaciones</a><a class="btn" href="cronograma.html">Cronograma</a></div></div>
+      </div>
+    </div>`;
+
+  // Ahora en clase: asistencia abierta o dinámica activa
+  let asis = null, din = null;
+  const pintarVivo = () => {
+    const items = [];
+    if(asis && asis.activa) items.push(`<a class="btn primary" href="asistencia.html">Dar el presente</a>`);
+    if(din && din.activa) items.push(`<a class="btn primary" href="participar.html">Participar</a>`);
+    document.getElementById("vivo").innerHTML = items.length ? `<div class="card live" style="border:2px solid var(--live)"><h2><span class="dot"></span>Ahora en clase</h2><div class="row">${items.join("")}</div></div>` : "";
+  };
+  F.onSnapshot(F.doc(db, "publico", "actual"), s => { asis = s.data(); pintarVivo(); }, () => {});
+  F.onSnapshot(F.doc(db, "publico", "dinamica"), s => { din = s.data(); pintarVivo(); }, () => {});
+});
 </script>
 </body>
 </html>

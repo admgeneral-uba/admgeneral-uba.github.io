@@ -6,7 +6,7 @@ service cloud.firestore {
     function esDocente() {
       return request.auth != null
         && request.auth.token.email_verified == true
-        && request.auth.token.email in ['TU_EMAIL@gmail.com'];
+        && request.auth.token.email in ['nalvarez102@gmail.com'];
     }
 
     // Sesión de asistencia: contiene el código vigente. Solo el docente la ve.
@@ -39,6 +39,98 @@ service cloud.firestore {
         && sesion().activa == true
         && request.resource.data.codigo in [sesion().codigo, sesion().codigoAnterior];
       allow read, update, delete: if esDocente();
+    }
+
+    // ───────── Recursos para la clase ─────────
+
+    // Nube de palabras
+    match /nubes/{nid} {
+      allow read, write: if esDocente();
+      match /palabras/{pid} {
+        allow read: if esDocente();
+        allow create: if
+          get(/databases/$(database)/documents/nubes/$(nid)).data.activa == true
+          && request.resource.data.keys().hasOnly(['texto','disp','hora'])
+          && request.resource.data.texto is string
+          && request.resource.data.texto.size() >= 1 && request.resource.data.texto.size() <= 25
+          && request.resource.data.disp is string && request.resource.data.disp.size() <= 20
+          && request.resource.data.hora == request.time;
+      }
+    }
+
+    // Mural de ideas
+    match /murales/{mid} {
+      allow read, write: if esDocente();
+      match /notas/{nid} {
+        allow read: if esDocente();
+        allow create: if
+          get(/databases/$(database)/documents/murales/$(mid)).data.activa == true
+          && request.resource.data.keys().hasOnly(['texto','nombre','disp','hora'])
+          && request.resource.data.texto is string
+          && request.resource.data.texto.size() >= 2 && request.resource.data.texto.size() <= 200
+          && request.resource.data.nombre is string && request.resource.data.nombre.size() <= 40
+          && request.resource.data.disp is string && request.resource.data.disp.size() <= 20
+          && request.resource.data.hora == request.time;
+      }
+    }
+
+    // Quiz con ranking
+    match /quizzes/{qid} {
+      allow read, write: if esDocente();
+    }
+    match /partidas/{pid} {
+      allow read, write: if esDocente();
+      function partida() { return get(/databases/$(database)/documents/partidas/$(pid)).data; }
+      match /jugadores/{jid} {
+        allow read: if esDocente();
+        allow create: if partida().activa == true
+          && request.resource.data.keys().hasOnly(['apodo','hora'])
+          && request.resource.data.apodo is string
+          && request.resource.data.apodo.size() >= 1 && request.resource.data.apodo.size() <= 20
+          && request.resource.data.hora == request.time;
+      }
+      match /respuestas/{rid} {
+        allow read: if esDocente();
+        allow create: if partida().estado == 'pregunta'
+          && request.resource.data.keys().hasOnly(['disp','idx','opcion','hora'])
+          && request.resource.data.idx == partida().idx
+          && rid == request.resource.data.disp + '_' + string(request.resource.data.idx)
+          && request.resource.data.opcion is int
+          && request.resource.data.opcion >= 0 && request.resource.data.opcion <= 3
+          && request.resource.data.hora == request.time
+          && request.time < partida().inicioTs + duration.value(partida().tiempo + 2, 's');
+      }
+    }
+
+    // Encuesta en vivo
+    match /encuestas/{eid} {
+      allow read, write: if esDocente();
+      match /votos/{vid} {
+        allow read: if esDocente();
+        allow create: if
+          get(/databases/$(database)/documents/encuestas/$(eid)).data.activa == true
+          && request.resource.data.keys().hasOnly(['opcion','hora'])
+          && request.resource.data.opcion is int
+          && request.resource.data.opcion >= 0
+          && request.resource.data.opcion < get(/databases/$(database)/documents/encuestas/$(eid)).data.opciones.size()
+          && request.resource.data.hora == request.time;
+      }
+    }
+
+    // ───────── Sitio del curso ─────────
+    function logueado() { return request.auth != null; }
+
+    // Cronograma, unidades y avisos: los ve cualquiera que ingresó; los edita el docente.
+    match /clases/{id}   { allow read: if logueado(); allow write: if esDocente(); }
+    match /unidades/{id} { allow read: if logueado(); allow write: if esDocente(); }
+    match /avisos/{id}   { allow read: if logueado(); allow write: if esDocente(); }
+
+    // Ficha de cada estudiante: solo la ve y la edita su dueño (y la lee el docente).
+    match /estudiantes/{uid} {
+      allow read: if esDocente() || (logueado() && request.auth.uid == uid);
+      allow create, update: if logueado() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['vistos','hechos','perfil']);
+      allow delete: if esDocente();
     }
   }
 }

@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Contenidos · Área docente</title>
+<link rel="icon" href="img/uba.png">
+<link rel="stylesheet" href="sitio.css">
+<style>
+details.u{background:var(--paper);border:1px solid var(--line);border-radius:16px}
+details.u>summary{list-style:none;cursor:pointer;padding:18px 24px;display:flex;align-items:center;gap:14px}
+details.u>summary::-webkit-details-marker{display:none}
+details.u>summary h2{margin:0;font-size:22px;flex:1}
+details.u>summary .num{font-family:var(--serif);font-weight:700;font-size:20px;color:var(--live-ink);width:46px}
+details.u[open]>summary{border-bottom:1px solid var(--line)}
+.ub{padding:18px 24px 22px;display:flex;flex-direction:column;gap:22px}
+.ub h3{margin:0 0 10px;font-size:18px}
+.prow{display:grid;grid-template-columns:minmax(0,260px) minmax(0,1fr) auto;gap:10px;align-items:center;margin-bottom:8px}
+.prow .t{font-weight:700}
+.lrow{display:grid;grid-template-columns:150px minmax(0,1fr) minmax(0,280px) 40px;gap:8px;align-items:start;margin-bottom:8px}
+.rrow{display:grid;grid-template-columns:130px minmax(0,220px) minmax(0,1fr) minmax(0,240px) 40px;gap:8px;align-items:start;margin-bottom:8px}
+.lrow textarea,.rrow textarea{min-height:44px}
+.del{font:inherit;font-size:20px;line-height:1;color:var(--muted);background:none;border:0;cursor:pointer;padding:8px}
+.del:hover{color:var(--bad)}
+.ufoot{display:flex;justify-content:flex-end}
+@media (max-width:860px){.prow,.lrow,.rrow{grid-template-columns:1fr}.lrow,.rrow{border-bottom:1px solid var(--line2);padding-bottom:10px}}
+</style>
+</head>
+<body>
+<script type="module">
+import { iniciar, db, F, esc, toast, UNIDADES, leerClases, leerUnidades, corta, esUrl, $ } from "./app.js";
+import { UNIDADES_BASE } from "./datos-base.js";
+
+const TIPOS_L = ["Obligatoria", "Complementaria"];
+const TIPOS_R = ["Video", "Artículo", "Podcast", "Libro", "Sitio"];
+
+iniciar({ area: "docente", activo: "Contenidos", titulo: "Contenidos", fondo: "intenso" }, async (user, main) => {
+  const [clases, unidades] = await Promise.all([leerClases(), leerUnidades()]);
+
+  if(!Object.keys(unidades).length){
+    main.innerHTML = `<div class="card"><h2>Todavía no hay unidades cargadas</h2>
+      <div class="row"><button class="btn primary" id="seed" type="button">Cargar las unidades y lecturas base</button></div></div>`;
+    $("#seed").onclick = async () => {
+      $("#seed").disabled = true;
+      try{ const b = F.writeBatch(db); UNIDADES.forEach(u => b.set(F.doc(db, "unidades", u), { nombre: UNIDADES_BASE[u].nombre, lecturas: UNIDADES_BASE[u].lecturas, recomendaciones: [] })); await b.commit(); location.reload(); }
+      catch(e){ console.error(e); toast("No se pudo cargar. Revisá las reglas de Firebase."); $("#seed").disabled = false; }
+    };
+    return;
+  }
+
+  const estado = {};
+  UNIDADES.forEach(u => {
+    const d = unidades[u] || {};
+    estado[u] = { nombre: d.nombre || "", lecturas: (d.lecturas || []).map(x => ({ ...x })), recomendaciones: (d.recomendaciones || []).map(x => ({ ...x })),
+      clases: clases.filter(c => c.unidad === u).map(c => ({ id: c.id, n: c.n, fecha: c.fecha, titulo: c.titulo, presentacion: c.presentacion || "", orig: c.presentacion || "" })) };
+  });
+  const abiertas = new Set();
+  const opt = (v, arr) => arr.map(o => `<option${o === v ? " selected" : ""}>${o}</option>`).join("");
+  const pill = url => !url ? '<span class="pill na">Sin cargar</span>' : esUrl(url) ? '<span class="pill ok">Cargada</span>' : '<span class="pill bad">Enlace no válido</span>';
+
+  function unidadHTML(u){
+    const e = estado[u];
+    return `<details class="u" data-u="${u}"${abiertas.has(u) ? " open" : ""}>
+      <summary><span class="num">${u}</span><h2>${esc(e.nombre || "Unidad " + u)}</h2></summary>
+      <div class="ub">
+        <div><label class="l" for="nom-${u}">Nombre de la unidad</label><input type="text" id="nom-${u}" data-k="nombre" value="${esc(e.nombre)}" maxlength="90"></div>
+        <div><h3>Presentaciones</h3>
+          ${e.clases.length ? e.clases.map((c, i) => `<div class="prow"><span class="t">Clase ${c.n} · ${esc(corta(c.fecha))}</span>
+            <input type="url" data-p="${i}" value="${esc(c.presentacion)}" placeholder="Enlace de Google Drive" aria-label="Presentación de la clase ${c.n}">
+            <span data-pill="${i}">${pill(c.presentacion)}</span></div>`).join("") : '<p class="empty">No hay clases de esta unidad en el cronograma.</p>'}
+        </div>
+        <div><h3>Lecturas</h3>
+          ${e.lecturas.map((l, i) => `<div class="lrow">
+            <select data-l="${i}" data-f="tipo" aria-label="Tipo">${opt(l.tipo, TIPOS_L)}</select>
+            <textarea data-l="${i}" data-f="cita" rows="2" placeholder="Cita" aria-label="Cita">${esc(l.cita)}</textarea>
+            <input type="url" data-l="${i}" data-f="url" value="${esc(l.url)}" placeholder="Enlace de Google Drive" aria-label="Enlace">
+            <button class="del" type="button" data-dl="${i}" aria-label="Quitar lectura" title="Quitar">×</button></div>`).join("")}
+          <button class="btn small" type="button" data-add="l">Agregar lectura</button>
+        </div>
+        <div><h3>Recomendaciones</h3>
+          ${e.recomendaciones.map((r, i) => `<div class="rrow">
+            <select data-r="${i}" data-f="tipo" aria-label="Tipo">${opt(r.tipo, TIPOS_R)}</select>
+            <input type="text" data-r="${i}" data-f="titulo" value="${esc(r.titulo)}" placeholder="Título" aria-label="Título">
+            <textarea data-r="${i}" data-f="descripcion" rows="2" placeholder="Descripción" aria-label="Descripción">${esc(r.descripcion)}</textarea>
+            <input type="url" data-r="${i}" data-f="url" value="${esc(r.url)}" placeholder="Enlace" aria-label="Enlace">
+            <button class="del" type="button" data-dr="${i}" aria-label="Quitar recomendación" title="Quitar">×</button></div>`).join("")}
+          <button class="btn small" type="button" data-add="r">Agregar recomendación</button>
+        </div>
+        <div class="ufoot"><button class="btn primary" type="button" data-save>Guardar unidad ${u}</button></div>
+      </div></details>`;
+  }
+
+  function draw(){
+    main.innerHTML = UNIDADES.map(unidadHTML).join("");
+    main.querySelectorAll("details.u").forEach(det => {
+      const u = det.dataset.u, e = estado[u];
+      det.addEventListener("toggle", () => det.open ? abiertas.add(u) : abiertas.delete(u));
+      det.querySelector('[data-k="nombre"]').oninput = ev => e.nombre = ev.target.value;
+      det.querySelectorAll("[data-p]").forEach(inp => inp.oninput = () => { const i = +inp.dataset.p; e.clases[i].presentacion = inp.value.trim(); det.querySelector(`[data-pill="${i}"]`).innerHTML = pill(e.clases[i].presentacion); });
+      det.querySelectorAll("[data-l]").forEach(inp => inp.oninput = () => e.lecturas[+inp.dataset.l][inp.dataset.f] = inp.value);
+      det.querySelectorAll("[data-r]").forEach(inp => inp.oninput = () => e.recomendaciones[+inp.dataset.r][inp.dataset.f] = inp.value);
+      det.querySelectorAll("[data-dl]").forEach(b => b.onclick = () => { e.lecturas.splice(+b.dataset.dl, 1); draw(); });
+      det.querySelectorAll("[data-dr]").forEach(b => b.onclick = () => { e.recomendaciones.splice(+b.dataset.dr, 1); draw(); });
+      det.querySelectorAll("[data-add]").forEach(b => b.onclick = () => {
+        if(b.dataset.add === "l") e.lecturas.push({ tipo: "Obligatoria", cita: "", url: "" });
+        else e.recomendaciones.push({ tipo: "Video", titulo: "", descripcion: "", url: "" });
+        draw();
+      });
+      det.querySelector("[data-save]").onclick = ev => guardar(u, ev.target);
+    });
+  }
+
+  async function guardar(u, btn){
+    const e = estado[u];
+    const malas = [...e.clases.map(c => c.presentacion), ...e.lecturas.map(l => l.url), ...e.recomendaciones.map(r => r.url)].filter(x => x && !esUrl(x));
+    if(malas.length){ toast("Hay un enlace que no es válido. Tiene que empezar con https://"); return; }
+    btn.disabled = true;
+    try{
+      const b = F.writeBatch(db);
+      b.set(F.doc(db, "unidades", u), {
+        nombre: e.nombre.trim(),
+        lecturas: e.lecturas.filter(l => l.cita.trim()).map(l => ({ tipo: l.tipo, cita: l.cita.trim(), url: (l.url || "").trim() })),
+        recomendaciones: e.recomendaciones.filter(r => r.titulo.trim()).map(r => ({ tipo: r.tipo, titulo: r.titulo.trim(), descripcion: (r.descripcion || "").trim(), url: (r.url || "").trim() }))
+      });
+      e.clases.filter(c => c.presentacion !== c.orig).forEach(c => b.update(F.doc(db, "clases", c.id), { presentacion: c.presentacion }));
+      await b.commit();
+      e.clases.forEach(c => c.orig = c.presentacion);
+      toast(`Unidad ${u} guardada`); draw();
+    }catch(err){ console.error(err); toast("No se pudo guardar. Probá de nuevo."); btn.disabled = false; }
+  }
+  draw();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cronograma · Administración General</title>
+<link rel="icon" href="img/uba.png">
+<link rel="stylesheet" href="sitio.css">
+<style>
+.list{display:flex;flex-direction:column;gap:12px}
+.cl{display:grid;grid-template-columns:120px minmax(0,1fr);gap:18px;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px 20px}
+.cl.past{background:var(--gray-bg);border-color:var(--line2)}
+.cl.next{border:2px solid var(--live)}
+.cl .d{font-family:var(--serif);font-weight:700;font-size:20px;line-height:1.15}
+.cl .d small{display:block;font-family:var(--sans);font-weight:400;font-size:15px;color:var(--muted);margin-top:4px}
+.cl h2{margin:0;font-size:20px;line-height:1.25}
+.cl ul{margin:6px 0 0;padding-left:20px;color:var(--text)}
+.cl .m{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:4px}
+@media (max-width:640px){.cl{grid-template-columns:1fr;gap:6px}}
+</style>
+</head>
+<body>
+<script type="module">
+import { iniciar, esc, leerClases, hoyISO, aFecha, DIAS } from "./app.js";
+iniciar({ area: "estudiantes", activo: "Cronograma", titulo: "Cronograma" }, async (user, main) => {
+  const clases = await leerClases(), hoy = hoyISO();
+  if(!clases.length){ main.innerHTML = '<div class="card"><p class="empty">Todavía no está cargado el cronograma.</p></div>'; return; }
+  const prox = clases.find(c => c.fecha >= hoy);
+  main.innerHTML = `<div class="list">${clases.map(c => {
+    const d = aFecha(c.fecha), cls = c.fecha < hoy ? "past" : c === prox ? "next" : "";
+    return `<article class="cl ${cls}"${c === prox ? ' id="proxima"' : ""}>
+      <div class="d">${d.getDate()}/${d.getMonth() + 1}<small>${DIAS[d.getDay()]} · ${esc(c.modalidad)}</small></div>
+      <div><div class="m"><span class="muted small">Clase ${c.n}${c.unidad ? " · Unidad " + c.unidad : ""}</span></div>
+        <h2>${esc(c.titulo)}</h2>
+        ${c.temas ? `<ul>${c.temas.split("\n").filter(Boolean).map(t => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}</div>
+    </article>`;
+  }).join("")}</div>`;
+  const p = document.getElementById("proxima"); if(p && clases.indexOf(prox) > 2) p.scrollIntoView({ block: "center" });
+});
+</script>
+</body>
+</html>
