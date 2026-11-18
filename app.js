@@ -108,8 +108,8 @@ export function iniciar(o, alListo){
     if(PRUEBA){
       if(!user){ signInAnonymously(auth).catch(e => { console.error(e); const m = pintar(null); m.innerHTML = '<div class="card"><h2>No se pudo abrir la vista de prueba</h2><p class="muted" style="margin:0">Falta activar el acceso anónimo en Firebase.</p></div>'; }); return; }
       user = { uid: user.uid, displayName: "Estudiante de prueba", email: "", photoURL: null, prueba: true };
-      if(o.area === "docente"){ const m = pintar(user); bannerPrueba(); m.innerHTML = '<div class="card"><h2>Estás en la vista de prueba</h2><p class="muted">Salí de la vista de prueba para entrar al área docente.</p></div>'; return; }
-      const main = pintar(user); bannerPrueba();
+      if(o.area === "docente"){ const m = pintar(user); m.innerHTML = '<div class="card"><h2>Estás en la vista de prueba</h2><p class="muted">Salí de la vista de prueba para entrar al área docente.</p></div>'; return; }
+      const main = pintar(user);
       try{ await alListo(user, main); }
       catch(e){ console.error(e); main.innerHTML = '<div class="card"><h2>No se pudo cargar la página</h2></div>'; }
       return;
