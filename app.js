@@ -2,13 +2,34 @@
 //  Módulo común del sitio: encabezado, ingreso con Google y utilidades.
 //  No hace falta editarlo. Los datos del curso están en curso.js.
 // ─────────────────────────────────────────────────────────────
-import { db, auth, configurado } from "./firebase.js";
-import * as F from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { db as dbSitio, auth as authSitio, configurado } from "./firebase.js";
+import { firebaseConfig } from "./config.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import * as FS from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInAnonymously, setPersistence, browserSessionPersistence, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { CURSO_INFO } from "./curso.js";
 
+/* ---------- vista de prueba (test.html) ----------
+   Muestra el sitio como lo ve un estudiante, sin cuenta de Google y sin guardar nada.
+   Usa una conexión aparte, así no cierra la sesión docente del navegador. */
+export const PRUEBA = (() => { try{ return sessionStorage.getItem("vistaPrueba") === "1"; }catch(e){ return false; } })();
+let db = dbSitio, auth = authSitio;
+if(PRUEBA && configurado){
+  const appP = initializeApp(firebaseConfig, "vista-prueba");
+  db = FS.getFirestore(appP); auth = getAuth(appP);
+  await setPersistence(auth, browserSessionPersistence).catch(() => {});
+}
+// En la vista de prueba las escrituras no hacen nada.
+const nada = async () => {};
+const F = PRUEBA ? { ...FS, setDoc: nada, updateDoc: nada, deleteDoc: nada, addDoc: async () => ({ id: "prueba" }),
+  writeBatch: () => ({ set(){}, update(){}, delete(){}, commit: nada }) } : FS;
+
 export { db, auth, F, CURSO_INFO };
-export const salir = () => signOut(auth);
+export const salir = () => PRUEBA ? salirPrueba() : signOut(auth);
+export function salirPrueba(){
+  try{ sessionStorage.removeItem("vistaPrueba"); }catch(e){}
+  signOut(auth).finally(() => location.href = "index.html");
+}
 
 /* ---------- utilidades ---------- */
 export const $ = s => document.querySelector(s);
@@ -84,6 +105,16 @@ export function iniciar(o, alListo){
   if(!configurado){ const m = pintar(null); m.innerHTML = '<div class="card"><h2>Falta conectar la base de datos</h2><p class="muted" style="margin:0">Completá el archivo config.js con los datos de Firebase.</p></div>'; return; }
   onAuthStateChanged(auth, async user => {
     esDocenteCache = null;
+    if(PRUEBA){
+      if(!user){ signInAnonymously(auth).catch(e => { console.error(e); const m = pintar(null); m.innerHTML = '<div class="card"><h2>No se pudo abrir la vista de prueba</h2><p class="muted" style="margin:0">Falta activar el acceso anónimo en Firebase.</p></div>'; }); return; }
+      user = { uid: user.uid, displayName: "Estudiante de prueba", email: "", photoURL: null, prueba: true };
+      if(o.area === "docente"){ const m = pintar(user); bannerPrueba(); m.innerHTML = '<div class="card"><h2>Estás en la vista de prueba</h2><p class="muted">Salí de la vista de prueba para entrar al área docente.</p></div>'; return; }
+      const main = pintar(user); bannerPrueba();
+      try{ await alListo(user, main); }
+      catch(e){ console.error(e); main.innerHTML = '<div class="card"><h2>No se pudo cargar la página</h2></div>'; }
+      return;
+    }
+    if(user && user.isAnonymous){ signOut(auth); return; }
     const main = pintar(user);
     if(!user){
       main.innerHTML = `<div class="card login"><h2 style="font-size:28px">Ingresá para continuar</h2>
@@ -103,6 +134,13 @@ export function iniciar(o, alListo){
     try{ await alListo(user, main); }
     catch(e){ console.error(e); main.innerHTML = `<div class="card"><h2>No se pudo cargar la página</h2><p class="muted" style="margin:0">${e.code === "permission-denied" ? "Faltan permisos en las reglas de Firebase." : "Revisá tu conexión y recargá la página."}</p></div>`; }
   });
+}
+
+function bannerPrueba(){
+  const b = document.createElement("div"); b.className = "prueba";
+  b.innerHTML = '<span><b>Vista de prueba.</b> Así ve el sitio un estudiante. No se guarda nada.</span><button type="button" class="btn small">Salir</button>';
+  b.querySelector("button").onclick = salirPrueba;
+  document.body.prepend(b);
 }
 
 // Deja anotado al estudiante (email y nombre de Google) para la lista del docente. Una vez por sesión.
@@ -126,8 +164,8 @@ export async function leerUnidades(){
   return m;
 }
 export async function leerMiDoc(uid){
-  const d = await F.getDoc(F.doc(db, "estudiantes", uid));
-  return d.exists() ? d.data() : {};
+  try{ const d = await F.getDoc(F.doc(db, "estudiantes", uid)); return d.exists() ? d.data() : {}; }
+  catch(e){ if(PRUEBA) return {}; throw e; }
 }
 // Asistencia del estudiante: clases en las que se tomó asistencia y las que tiene presente.
 export async function leerTomadas(){
@@ -135,6 +173,7 @@ export async function leerTomadas(){
   return d.exists() ? (d.data().tomadas || {}) : {};
 }
 export async function misPresentes(uid){
+  if(PRUEBA) return {};
   const s = await F.getDocs(F.query(F.collection(db, "asistencias"), F.where("uid", "==", uid)));
   const m = {}; s.docs.forEach(d => m[d.data().sesion] = true); return m;
 }
@@ -159,6 +198,7 @@ export const inicioDia = isoD => new Date(isoD + "T00:00:00-03:00");
 export const finClase = isoD => new Date(isoD + "T" + (CURSO_INFO.horaFin || "09:00") + ":00-03:00");
 export const normal = s => String(s || "").toUpperCase().normalize("NFD").replace(/N\u0303/g, "Ñ").replace(/[\u0300-\u036f]/g, "").replace(/[^A-ZÑ]/g, "");
 export async function misDesafios(uid){
+  if(PRUEBA) return { tests: [], jugadas: [] };
   const [r, j] = await Promise.all([
     F.getDocs(F.query(F.collection(db, "respuestasTest"), F.where("uid", "==", uid))),
     F.getDocs(F.query(F.collection(db, "jugadas"), F.where("uid", "==", uid)))]);

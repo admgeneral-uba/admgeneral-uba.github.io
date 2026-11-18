@@ -28,7 +28,7 @@ service cloud.firestore {
       // Un estudiante puede CREAR su propio registro si la asistencia está abierta
       // y el código es el vigente o el anterior. El id es sesion_uid: uno por clase.
       allow create: if esDocente() || (
-        request.auth != null
+        logueado()
         && request.resource.data.keys().hasOnly(['sesion','uid','nombre','email','codigo','hora'])
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.email == request.auth.token.email
@@ -119,13 +119,16 @@ service cloud.firestore {
     }
 
     // ───────── Sitio del curso ─────────
-    function logueado() { return request.auth != null; }
+    // lector(): cualquier sesión, incluida la vista de prueba (anónima). Solo para leer contenidos del curso.
+    function lector() { return request.auth != null; }
+    // logueado(): sesión con cuenta real (no anónima).
+    function logueado() { return request.auth != null && request.auth.token.firebase.sign_in_provider != 'anonymous'; }
 
     // Cronograma, unidades, avisos y documentos: los ve cualquiera que ingresó; los edita el docente.
-    match /clases/{id}   { allow read: if logueado(); allow write: if esDocente(); }
-    match /unidades/{id} { allow read: if logueado(); allow write: if esDocente(); }
-    match /avisos/{id}   { allow read: if logueado(); allow write: if esDocente(); }
-    match /curso/{id}    { allow read: if logueado(); allow write: if esDocente(); }
+    match /clases/{id}   { allow read: if lector(); allow write: if esDocente(); }
+    match /unidades/{id} { allow read: if lector(); allow write: if esDocente(); }
+    match /avisos/{id}   { allow read: if lector(); allow write: if esDocente(); }
+    match /curso/{id}    { allow read: if lector(); allow write: if esDocente(); }
 
     // Ficha de cada estudiante: solo la ve y la edita su dueño (y la lee el docente).
     match /estudiantes/{uid} {
@@ -145,7 +148,7 @@ service cloud.firestore {
     // ───────── Desafíos ─────────
     // Test de lectura: una pregunta por día. Se ve desde su fecha; la respuesta correcta, después de responder.
     match /tests/{tid} {
-      allow read: if esDocente() || (logueado() && resource.data.desde <= request.time);
+      allow read: if esDocente() || (lector() && resource.data.desde <= request.time);
       allow write: if esDocente();
     }
     match /claves/{tid} {
@@ -168,7 +171,7 @@ service cloud.firestore {
 
     // Tercer tiempo: la palabra de la clase se puede jugar cuando termina la clase.
     match /juegos/{jid} {
-      allow read: if esDocente() || (logueado() && resource.data.desde <= request.time);
+      allow read: if esDocente() || (lector() && resource.data.desde <= request.time);
       allow write: if esDocente();
     }
     match /jugadas/{rid} {
