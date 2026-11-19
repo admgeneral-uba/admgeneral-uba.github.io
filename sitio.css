@@ -117,3 +117,4 @@ details.fold>summary{list-style:none;cursor:pointer;display:flex;align-items:cen
 details.fold>summary::-webkit-details-marker{display:none}
 details.fold>summary .chev{margin-left:auto;flex:none;color:var(--muted);transition:transform .2s;display:flex}
 details.fold[open]>summary .chev{transform:rotate(180deg)}
+.simula{max-width:1080px;margin:16px auto 0;padding:10px 16px;border-radius:12px;background:#FFF4D6;border:1px solid #E8C96A;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;width:calc(100% - 32px)}

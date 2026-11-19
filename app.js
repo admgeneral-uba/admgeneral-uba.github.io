@@ -23,7 +23,11 @@ if(PRUEBA && configurado){
   const u = await new Promise(r => { const un = onAuthStateChanged(authSitio, x => { un(); r(x); }); });
   if(u && !u.isAnonymous){ try{ await FS.getDoc(FS.doc(dbSitio, "sesiones", "prueba-docente")); db = dbSitio; docenteEnPrueba = true; }catch(e){} }
 }
-const FECHA_PRUEBA = (() => { try{ return PRUEBA && docenteEnPrueba ? sessionStorage.getItem("fechaPrueba") : null; }catch(e){ return null; } })();
+// Fecha simulada: en la vista de prueba (si el docente tiene su sesión abierta) o en el área docente (/docente/test/fechaDDMMAA).
+const ss = k => { try{ return sessionStorage.getItem(k); }catch(e){ return null; } };
+export const FECHA_PEDIDA = PRUEBA ? ss("fechaPrueba") : ss("fechaDocente");
+const FECHA_PRUEBA = PRUEBA ? (docenteEnPrueba ? FECHA_PEDIDA : null) : FECHA_PEDIDA;
+export const fechaCorta = f => f ? f.slice(8, 10) + f.slice(5, 7) + f.slice(2, 4) : "";
 const T0 = Date.now();
 // Momento actual (simulado en la vista de prueba del docente).
 export const ahora = () => FECHA_PRUEBA ? Date.parse(FECHA_PRUEBA + "T10:00:00-03:00") + (Date.now() - T0) : Date.now();
@@ -74,7 +78,7 @@ function headerHTML(o, user){
   const nav = (o.area === "docente" ? NAV_DOC : NAV_EST).map(([t, h]) => `<a href="${h}"${t === o.activo ? ' aria-current="page"' : ""}>${t}</a>`).join("");
   const av = user ? (user.photoURL ? `<img src="${esc(user.photoURL)}" alt="" referrerpolicy="no-referrer">` : `<span class="ini">${esc(iniciales(user.displayName))}</span>`) : "";
   const me = !user ? "" : o.area === "docente"
-    ? `<span class="me">${av}<a href="index.html" class="out">Ver como estudiante</a><button class="out" id="salir" type="button">Salir</button></span>`
+    ? `<span class="me">${av}<a href="${FECHA_PRUEBA ? "/test/fecha" + fechaCorta(FECHA_PRUEBA) : "index.html"}" class="out">Ver como estudiante</a><button class="out" id="salir" type="button">Salir</button></span>`
     : `<a class="me${o.activo === "Perfil" ? " on" : ""}" href="perfil.html" aria-label="Perfil" title="Perfil"${o.activo === "Perfil" ? ' aria-current="page"' : ""}>${av}</a>`;
   const extra = "";
   const brand = o.area === "docente"
@@ -118,6 +122,11 @@ export function iniciar(o, alListo){
       user = { uid: user.uid, displayName: "Estudiante de prueba", email: "", photoURL: null, prueba: true };
       if(o.area === "docente"){ const m = pintar(user); m.innerHTML = '<div class="card"><h2>Estás en la vista de prueba</h2><p class="muted">Salí de la vista de prueba para entrar al área docente.</p><button class="btn primary" id="salirP" type="button">Salir de la vista de prueba</button></div>'; $("#salirP").onclick = () => { try{ sessionStorage.removeItem("vistaPrueba"); sessionStorage.removeItem("fechaPrueba"); }catch(e){} location.reload(); }; return; }
       const main = pintar(user);
+      if(FECHA_PEDIDA && !docenteEnPrueba){
+        main.innerHTML = `<div class="card"><h2>Primero ingresá como docente</h2><p class="muted">Para ver el sitio en otra fecha, la vista de prueba necesita tu sesión docente en este navegador.</p><button class="btn primary" id="irDoc" type="button">Ingresar como docente</button></div>`;
+        $("#irDoc").onclick = () => { try{ sessionStorage.setItem("volverPrueba", FECHA_PEDIDA); sessionStorage.removeItem("vistaPrueba"); sessionStorage.removeItem("fechaPrueba"); }catch(e){} signOut(auth).finally(() => location.href = "/docente.html"); };
+        return;
+      }
       try{ await alListo(user, main); }
       catch(e){ console.error(e); main.innerHTML = '<div class="card"><h2>No se pudo cargar la página</h2></div>'; }
       return;
@@ -137,6 +146,17 @@ export function iniciar(o, alListo){
     if(o.area === "docente" && !(await esDocente())){
       main.innerHTML = `<div class="card"><h2>Esta sección es solo para docentes</h2><p class="muted">Ingresaste como <b>${esc(user.email)}</b>. Si sos docente del curso, revisá que tu email esté en las reglas de Firebase.</p><a class="btn" href="index.html">Ir al sitio del curso</a></div>`;
       return;
+    }
+    if(o.area === "docente"){
+      const v = ss("volverPrueba");
+      if(v){ try{ sessionStorage.removeItem("volverPrueba"); }catch(e){} location.replace("/test/fecha" + fechaCorta(v)); return; }
+      if(FECHA_PRUEBA){
+        const bar = document.createElement("div"); bar.className = "simula";
+        const [a, m, d] = FECHA_PRUEBA.split("-");
+        bar.innerHTML = `<span>Fecha simulada: <b>${d}/${m}/${a}</b></span><button type="button" class="btn small">Volver a la fecha real</button>`;
+        bar.querySelector("button").onclick = () => { try{ sessionStorage.removeItem("fechaDocente"); }catch(e){} location.href = "/docente.html"; };
+        main.before(bar);
+      }
     }
     if(o.area !== "docente") await registrar(user);
     try{ await alListo(user, main); }

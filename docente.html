@@ -25,7 +25,7 @@
 </head>
 <body>
 <script type="module">
-import { iniciar, db, F, esc, toast, $, leerClases, leerTomadas, larga, hoyISO, esUrl, finClase, CURSO_INFO } from "./app.js";
+import { iniciar, db, F, esc, toast, $, leerClases, leerTomadas, larga, hoyISO, esUrl, finClase, CURSO_INFO, ahora } from "./app.js";
 
 iniciar({ area: "docente", activo: "Inicio", titulo: "Hola, Nicolás", fondo: "intenso" }, async (user, main) => {
   const [clases, tomadas, est, as, avs] = await Promise.all([leerClases(), leerTomadas(), F.getDocs(F.collection(db, "estudiantes")), F.getDocs(F.collection(db, "asistencias")), F.getDocs(F.collection(db, "avisos"))]);
@@ -40,7 +40,7 @@ iniciar({ area: "docente", activo: "Inicio", titulo: "Hola, Nicolás", fondo: "i
   const hechos = id => est.docs.filter(d => (d.data().hechos || {})[id]).length;
   let editando = null;
   const rHoy = (await F.getDocs(F.query(F.collection(db, "respuestasTest"), F.where("tid", "==", hoy)))).size;
-  const ult = clases.filter(c => finClase(c.fecha).getTime() <= Date.now()).pop();
+  const ult = clases.filter(c => finClase(c.fecha).getTime() <= ahora()).pop();
   const jug = ult ? (await F.getDocs(F.query(F.collection(db, "jugadas"), F.where("juego", "==", ult.id)))).size : 0;
 
   function draw(){

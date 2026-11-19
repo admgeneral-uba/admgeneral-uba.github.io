@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Administración General</title>
+<link rel="icon" href="/img/uba.png">
+<script>
+// Enlaces de prueba con fecha simulada (DDMMAA o DDMMAAAA):
+//   /test/fecha140427          → vista estudiante en esa fecha
+//   /docente/test/fecha140427  → área docente en esa fecha
+(function(){
+  const p = location.pathname.replace(/\/+$/, "").toLowerCase();
+  const m = p.match(/^\/(docente\/)?test(?:\/fecha(\d{2})(\d{2})(\d{2}|\d{4}))?$/);
+  if(!m) return;
+  let f = null;
+  if(m[2]){
+    const a = m[4].length === 2 ? "20" + m[4] : m[4], d = new Date(a + "-" + m[3] + "-" + m[2] + "T12:00:00");
+    if(!isNaN(d) && d.getDate() === +m[2]) f = a + "-" + m[3] + "-" + m[2];
+  }
+  try{
+    if(m[1]){
+      sessionStorage.removeItem("vistaPrueba"); sessionStorage.removeItem("fechaPrueba");
+      if(f) sessionStorage.setItem("fechaDocente", f); else sessionStorage.removeItem("fechaDocente");
+      location.replace("/docente.html");
+    }else{
+      sessionStorage.removeItem("fechaDocente");
+      sessionStorage.setItem("vistaPrueba", "1");
+      if(f) sessionStorage.setItem("fechaPrueba", f); else sessionStorage.removeItem("fechaPrueba");
+      location.replace("/index.html");
+    }
+    document.documentElement.dataset.redir = "1";
+  }catch(e){}
+})();
+</script>
+<style>body{font-family:system-ui,sans-serif;background:#F6F5FA;color:#1F2340;display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0;padding:16px}
+.c{background:#fff;border-radius:16px;padding:28px 32px;text-align:center;max-width:420px}
+a{display:inline-block;margin-top:12px;padding:10px 18px;border-radius:10px;background:#1F2340;color:#fff;text-decoration:none;font-weight:700}
+html[data-redir] .c{display:none}</style>
+</head>
+<body>
+<div class="c"><h1 style="margin:0 0 8px;font-size:24px">No encontramos esta página</h1><p style="margin:0">Puede que el enlace esté mal escrito.</p><a href="/index.html">Ir al inicio</a></div>
+</body>
+</html>
