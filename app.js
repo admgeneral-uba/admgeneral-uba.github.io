@@ -6,7 +6,7 @@ import { db as dbSitio, auth as authSitio, configurado } from "./firebase.js";
 import { firebaseConfig } from "./config.js";
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import * as FS from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInAnonymously, setPersistence, browserSessionPersistence, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithCredential, signInAnonymously, setPersistence, browserSessionPersistence, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { CURSO_INFO } from "./curso.js";
 
 /* ---------- vista de prueba (test.html) ----------
@@ -41,6 +41,14 @@ export const salir = () => PRUEBA ? salirPrueba() : signOut(auth);
 export function salirPrueba(){
   try{ sessionStorage.removeItem("vistaPrueba"); sessionStorage.removeItem("fechaPrueba"); }catch(e){}
   signOut(auth).finally(() => location.href = "index.html");
+}
+
+/* ---------- ingreso con Google ---------- */
+const GOOGLE_CLIENT_ID = "226169557415-d9n6fs7rof8dp9qv1i305gnoqnhnh6hc.apps.googleusercontent.com";
+let gisP = null;
+function cargarGIS(){
+  if(window.google && google.accounts && google.accounts.id) return Promise.resolve();
+  return gisP ||= new Promise((ok, mal) => { const sc = document.createElement("script"); sc.src = "https://accounts.google.com/gsi/client"; sc.async = true; sc.onload = ok; sc.onerror = mal; document.head.appendChild(sc); setTimeout(() => mal(new Error("gsi")), 8000); });
 }
 
 /* ---------- utilidades ---------- */
@@ -136,11 +144,18 @@ export function iniciar(o, alListo){
     if(!user){
       main.innerHTML = `<div class="card login"><h2 style="font-size:28px">Ingresá para continuar</h2>
         <p>Usá tu cuenta de Google.</p>
-        <button class="gbtn" id="entrar" type="button">${ICON.google}Ingresar con Google</button><p id="loginErr" style="color:var(--bad)"></p></div>`;
-      $("#entrar").onclick = async () => {
-        try{ await signInWithPopup(auth, new GoogleAuthProvider()); }
-        catch(e){ console.error(e); $("#loginErr").textContent = e.code === "auth/unauthorized-domain" ? "Falta autorizar este dominio en Firebase (Authentication → Configuración → Dominios autorizados)." : e.code === "auth/popup-closed-by-user" ? "" : "No se pudo ingresar. Probá de nuevo."; }
-      };
+        <div id="gsi" style="min-height:44px"></div>
+        <button class="gbtn" id="entrar" type="button" hidden>${ICON.google}Ingresar con Google</button><p id="loginErr" style="color:var(--bad)"></p></div>`;
+      const err = e => { console.error(e); $("#loginErr").textContent = e.code === "auth/unauthorized-domain" ? "Falta autorizar este dominio en Firebase (Authentication → Configuración → Dominios autorizados)." : e.code === "auth/popup-closed-by-user" ? "" : "No se pudo ingresar. Probá de nuevo."; };
+      // Botón oficial de Google (funciona también en celulares que bloquean el ingreso por otro dominio).
+      // Si no carga, queda el botón de siempre.
+      const respaldo = () => { const b = $("#entrar"); if(!b) return; b.hidden = false; b.onclick = () => signInWithPopup(auth, new GoogleAuthProvider()).catch(err); };
+      cargarGIS().then(() => {
+        google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, ux_mode: "popup", auto_select: false,
+          callback: r => signInWithCredential(auth, GoogleAuthProvider.credential(r.credential)).catch(err) });
+        const el = $("#gsi"); if(!el) return;
+        google.accounts.id.renderButton(el, { theme: "outline", size: "large", shape: "pill", text: "signin_with", locale: "es", width: Math.min(320, el.clientWidth || 320) });
+      }).catch(respaldo);
       return;
     }
     if(o.area === "docente" && !(await esDocente())){
