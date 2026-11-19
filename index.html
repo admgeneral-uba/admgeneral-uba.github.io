@@ -79,7 +79,7 @@ iniciar({ area: "estudiantes", activo: "Inicio", titulo: "Inicio" }, async (user
           <h3>Clase ${actual.n}: ${esc(actual.titulo)}</h3>
           <div class="muted">${esc(larga(actual.fecha))} · ${esc(actual.modalidad)}${actual.unidad ? " · Unidad " + actual.unidad : ""}</div>
           ${actual.temas ? `<ul>${actual.temas.split("\n").filter(Boolean).map(t => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}
-          ${u && u.lecturas && u.lecturas.length ? `<h2 style="margin:22px 0 12px;font-size:20px">Para leer</h2><ul class="lect">${u.lecturas.filter(l => l.tipo !== "Complementaria").map(l => `<li><span>${esc(l.cita)}</span>${esUrl(l.url) ? `<a class="btn small" href="${esc(l.url)}" target="_blank" rel="noopener">Abrir</a>` : ""}</li>`).join("")}</ul>` : ""}`
+`
         : `<h2>¡Hola${nombre ? ", " + esc(nombre) : ""}!</h2><p class="empty">Pronto vas a ver acá el cronograma de las clases.</p>`}
       </div>
         <div class="card"><h2>Materiales</h2><div class="row"><a class="btn" href="materiales.html">Ver lecturas y presentaciones</a><a class="btn" href="cronograma.html">Cronograma</a></div></div>
