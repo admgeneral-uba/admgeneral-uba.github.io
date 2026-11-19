@@ -4,7 +4,7 @@ import { normal, TIPOS, tipoDe, rng, barajar, armarSopa, armarCrucigrama } from 
 export async function montarJuego(root, o){
   const { juego, jid, user, db, F, esc } = o;
   const $ = s => root.querySelector(s);
-  const ESTILO = new URL("./juegos.css?v=3", import.meta.url).href;
+  const ESTILO = new URL("./juegos.css?v=4", import.meta.url).href;
   if(!document.querySelector(`link[href="${ESTILO}"]`)){ const l = document.createElement("link"); l.rel = "stylesheet"; l.href = ESTILO; document.head.appendChild(l); }
   const tipo = tipoDe(juego), rid = jid + "_" + user.uid;
   const S = { intentos: [], terminado: false, gano: false };

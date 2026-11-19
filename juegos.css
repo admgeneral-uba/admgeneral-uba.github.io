@@ -1,4 +1,5 @@
 .tj{width:100%;display:flex;flex-direction:column;align-items:center;gap:16px}
+.tj .msg:empty,.tj #fin:empty{display:none}
 .tj .zona{width:100%;display:flex;flex-direction:column;align-items:center;gap:16px}
 .tj .grid6{width:100%;justify-items:center}
 .tj .fila{width:100%}
