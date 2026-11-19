@@ -52,12 +52,14 @@
 .res{margin:6px 0 0;font-weight:700}
 .res.ok{color:var(--ok)}.res.bad{color:var(--bad)}
 .mini{display:grid;gap:6px;max-width:340px}
+.pres .marco{position:relative;aspect-ratio:16/10;border-radius:12px;overflow:hidden;background:#1F2340}
+.pres iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
 .mini span{aspect-ratio:1;border:2px solid var(--line);border-radius:7px}
 </style>
 </head>
 <body>
 <script type="module">
-import { iniciar, db, F, esc, toast, leerClases, leerUnidades, leerMiDoc, larga, hoyISO, esUrl, botonToggle, ICON, CURSO_INFO, finClase, misDesafios, racha, ahora } from "./app.js";
+import { iniciar, db, F, esc, toast, leerClases, leerUnidades, leerMiDoc, larga, hoyISO, esUrl, botonToggle, ICON, CURSO_INFO, finClase, misDesafios, racha, ahora, claseEnCurso, vistaPrevia } from "./app.js";
 import { montarJuego } from "./juegos-ui.js";
 import { TIPOS, tipoDe } from "./juegos.js";
 
@@ -69,26 +71,30 @@ iniciar({ area: "estudiantes", activo: "Inicio", titulo: "Inicio" }, async (user
   const actual = clases.find(c => c.fecha >= hoy) || clases[clases.length - 1];
   const u = actual && actual.unidad ? unidades[actual.unidad] : null;
   const nombre = (user.displayName || "").split(" ")[0];
+  // Modo clase: el día de clase, de 7 a 9 hs (sin test ni juego; presentación y recursos en vivo).
+  const enClase = claseEnCurso(clases, CURSO_INFO.horaInicioEstudiantes || "07:00");
 
   main.innerHTML = `
     <div id="vivo"></div>
     <div class="cols">
       <div class="side">
       <div class="card clase">
-        ${actual ? `<span class="kick">${actual.fecha === hoy ? "Hoy" : "Próxima clase"}</span>
+        ${actual ? `<span class="kick">${enClase ? '<span class="dot"></span>En clase ahora' : actual.fecha === hoy ? "Hoy" : "Próxima clase"}</span>
           <h3>Clase ${actual.n}: ${esc(actual.titulo)}</h3>
           <div class="muted">${esc(larga(actual.fecha))} · ${esc(actual.modalidad)}${actual.unidad ? " · Unidad " + actual.unidad : ""}</div>
           ${actual.temas ? `<ul>${actual.temas.split("\n").filter(Boolean).map(t => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}
 `
         : `<h2>¡Hola${nombre ? ", " + esc(nombre) : ""}!</h2><p class="empty">Pronto vas a ver acá el cronograma de las clases.</p>`}
       </div>
+        ${enClase ? '<div id="pres"></div><div id="vivoC"></div>' : ""}
         <div class="card"><h2>Materiales</h2><div class="row"><a class="btn" href="materiales.html">Ver lecturas y presentaciones</a><a class="btn" href="cronograma.html">Cronograma</a></div></div>
         ${avisos.length ? `<div class="card"><h2>Consignas, tareas y avisos</h2><div class="avs">${avisos.map(a => `<div class="av${hechos[a.id] ? " done" : ""}"><span>${esUrl(a.url) ? `<a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.titulo)}</a>` : esc(a.titulo)}</span><span data-av="${a.id}">${botonToggle("Hecho", !!hechos[a.id])}</span></div>`).join("")}</div></div>` : ""}
         ${u && u.recomendaciones && u.recomendaciones.length ? `<div class="card"><h2>Recomendaciones</h2><div class="rec">${u.recomendaciones.map(r => `<div>${esUrl(r.url) ? `<a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.titulo)}</a>` : `<b>${esc(r.titulo)}</b>`}${r.descripcion ? `<p>${esc(r.descripcion)}</p>` : ""}</div>`).join("")}</div></div>` : ""}
       </div>
       <div class="side" id="lado"><section class="game" id="test" hidden></section><section class="game" id="tt" hidden></section></div>
     </div>`;
-  desafios(user, clases, hoy).finally(() => { if(document.getElementById("test").hidden && document.getElementById("tt").hidden) main.querySelector(".cols").classList.add("uno"); });
+  if(enClase) main.querySelector(".cols").classList.add("uno");
+  else desafios(user, clases, hoy).finally(() => { if(document.getElementById("test").hidden && document.getElementById("tt").hidden) main.querySelector(".cols").classList.add("uno"); });
 
   main.querySelectorAll("[data-av]").forEach(w => w.addEventListener("click", async () => {
     const k = w.dataset.av, b = w.querySelector("button"), on = !hechos[k];
@@ -104,8 +110,24 @@ iniciar({ area: "estudiantes", activo: "Inicio", titulo: "Inicio" }, async (user
     const items = [];
     if(asis && asis.activa) items.push(`<a class="btn primary" href="asistencia.html">Dar el presente</a>`);
     if(din && din.activa) items.push(`<a class="btn primary" href="participar.html">Participar</a>`);
+    if(enClase){
+      document.getElementById("vivoC").innerHTML = `<div class="card"><h2>Recursos de la clase</h2>${items.length ? `<div class="row">${items.join("")}</div>` : '<p class="empty" style="margin:0">Cuando el profesor active un recurso (asistencia, nube de palabras, quiz…), aparece acá.</p>'}</div>`;
+      return;
+    }
     document.getElementById("vivo").innerHTML = items.length ? `<div class="card live" style="border:2px solid var(--live)"><h2><span class="dot"></span>Ahora en clase</h2><div class="row">${items.join("")}</div></div>` : "";
   };
+  // Presentación que está proyectando el profesor
+  if(enClase){
+    const pintarPres = p => {
+      const ok = p && p.activa && p.clase === enClase.id && esUrl(p.url);
+      document.getElementById("pres").innerHTML = ok
+        ? `<div class="card pres"><div class="row between" style="margin-bottom:12px"><h2 style="margin:0"><span class="dot"></span>Presentación</h2><a class="btn small" href="${esc(p.url)}" target="_blank" rel="noopener">Abrir en pantalla completa</a></div><div class="marco"><iframe src="${esc(vistaPrevia(p.url))}" title="Presentación de la clase" allow="autoplay; fullscreen" allowfullscreen loading="lazy"></iframe></div></div>`
+        : '<div class="card pres"><h2>Presentación</h2><p class="empty" style="margin:0">Cuando el profesor empiece a proyectar la presentación, la vas a ver acá.</p></div>';
+    };
+    pintarPres(null);
+    F.onSnapshot(F.doc(db, "publico", "presentacion"), d => pintarPres(d.data()), () => {});
+    pintarVivo();
+  }
   F.onSnapshot(F.doc(db, "publico", "actual"), s => { asis = s.data(); pintarVivo(); }, () => {});
   F.onSnapshot(F.doc(db, "publico", "dinamica"), s => { din = s.data(); pintarVivo(); }, () => {});
 });

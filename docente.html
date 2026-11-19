@@ -19,13 +19,23 @@
 .av .bar div{flex:1;height:8px;background:var(--line);border-radius:4px;overflow:hidden}
 .av .bar i{display:block;height:100%;background:var(--ok)}
 .av .acts{display:flex;gap:4px}
+.clasehoy{border:2px solid var(--live)}
+.clasehoy h3{margin:4px 0 6px;font-size:28px;line-height:1.2}
+.clasehoy .acc{display:flex;gap:12px;flex-wrap:wrap;margin-top:18px;align-items:center}
+.btn.grande{font-size:19px;padding:14px 26px}
+.sinpres{color:var(--text)}
+.compartiendo{margin-top:14px;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--ok-bg);border-radius:10px;padding:10px 14px;font-weight:700}
+.recs{display:flex;flex-wrap:wrap;gap:8px}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--live);margin-right:8px;animation:p 1.4s infinite}
+@keyframes p{50%{opacity:.35}}
+@media (prefers-reduced-motion:reduce){.dot{animation:none}}
 .edit{display:grid;gap:10px;padding:12px 0;border-top:1px solid var(--line2)}
 @media (max-width:760px){.av{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <script type="module">
-import { iniciar, db, F, esc, toast, $, leerClases, leerTomadas, larga, hoyISO, esUrl, finClase, CURSO_INFO, ahora } from "./app.js";
+import { iniciar, db, F, esc, toast, $, leerClases, leerTomadas, larga, hoyISO, esUrl, finClase, CURSO_INFO, ahora, claseEnCurso } from "./app.js";
 
 iniciar({ area: "docente", activo: "Inicio", titulo: "Hola, Nicolás", fondo: "intenso" }, async (user, main) => {
   const [clases, tomadas, est, as, avs] = await Promise.all([leerClases(), leerTomadas(), F.getDocs(F.collection(db, "estudiantes")), F.getDocs(F.collection(db, "asistencias")), F.getDocs(F.collection(db, "avisos"))]);
@@ -39,13 +49,29 @@ iniciar({ area: "docente", activo: "Inicio", titulo: "Hola, Nicolás", fondo: "i
   let avisos = avs.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.orden || 0) - (b.orden || 0));
   const hechos = id => est.docs.filter(d => (d.data().hechos || {})[id]).length;
   let editando = null;
+  // Modo clase: el día de clase, de 5 a 9 hs.
+  const enClase = claseEnCurso(clases, CURSO_INFO.horaInicioDocente || "05:00");
+  let presAct = null;
+  const RECURSOS = [["grupos.html", "Armar grupos"], ["nube.html", "Nube de palabras"], ["mural.html", "Mural de ideas"], ["quiz.html", "Quiz con ranking"], ["encuesta.html", "Encuesta en vivo"], ["ruleta.html", "Ruleta de nombres"], ["afirmaciones.html", "Afirmaciones del grupo"], ["temporizador.html", "Temporizador"]];
+  const panelClase = c => {
+    const compartiendo = presAct && presAct.activa && presAct.clase === c.id;
+    return `<div class="card clasehoy"><span class="kick"><span class="dot"></span>Clase de hoy</span>
+      <h3>Clase ${c.n}: ${esc(c.titulo)}</h3><div class="muted">${esc(larga(c.fecha))} · ${esc(c.modalidad)}${c.unidad ? " · Unidad " + c.unidad : ""}</div>
+      <div class="acc">${esUrl(c.presentacion)
+        ? `<button class="btn primary grande" id="proy" type="button">Proyectar presentación</button>`
+        : `<span class="sinpres">Todavía no cargaste la presentación de esta clase. <a href="docente-contenidos.html">Cargarla en Contenidos</a></span>`}
+        <a class="btn grande" href="docente-asistencia.html">Tomar asistencia</a></div>
+      ${compartiendo ? `<div class="compartiendo"><span><span class="dot"></span>Los estudiantes ven la presentación en el inicio del sitio.</span><button class="btn small" id="noComp" type="button">Dejar de compartir</button></div>` : ""}
+      <h3 style="font-size:20px;margin:22px 0 10px">Recursos</h3>
+      <div class="recs">${RECURSOS.map(([h, t]) => `<a class="btn" href="${h}">${t}</a>`).join("")}</div></div>`;
+  };
   const rHoy = (await F.getDocs(F.query(F.collection(db, "respuestasTest"), F.where("tid", "==", hoy)))).size;
   const ult = clases.filter(c => finClase(c.fecha).getTime() <= ahora()).pop();
   const jug = ult ? (await F.getDocs(F.query(F.collection(db, "jugadas"), F.where("juego", "==", ult.id)))).size : 0;
 
   function draw(){
     main.innerHTML = `
-    ${prox ? `<div class="card next"><span class="kick">${prox.fecha === hoy ? "Hoy" : "Próxima clase"}</span>
+    ${enClase ? panelClase(enClase) : prox ? `<div class="card next"><span class="kick">${prox.fecha === hoy ? "Hoy" : "Próxima clase"}</span>
       <h3>Clase ${prox.n}: ${esc(prox.titulo)}</h3><div class="muted">${esc(larga(prox.fecha))} · ${esc(prox.modalidad)}${prox.unidad ? " · Unidad " + prox.unidad : ""}</div>
       ${prox.temas ? `<ul>${prox.temas.split("\n").filter(Boolean).map(t => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}
       <div class="row" style="margin-top:16px"><a class="btn primary" href="docente-asistencia.html">Tomar asistencia</a><a class="btn" href="recursos.html">Recursos para la clase</a>${esUrl(prox.presentacion) ? `<a class="btn" href="${esc(prox.presentacion)}" target="_blank" rel="noopener">Presentación</a>` : ""}</div></div>` : ""}
@@ -61,6 +87,12 @@ iniciar({ area: "docente", activo: "Inicio", titulo: "Hola, Nicolás", fondo: "i
         <div class="bar"><div><i style="width:${N ? hechos(a.id) / N * 100 : 0}%"></i></div><span>${hechos(a.id)} de ${N}</span></div>
         <div class="acts"><button class="btn link" type="button" data-ed="${a.id}">Editar</button><button class="btn link" type="button" data-del="${a.id}">Borrar</button></div></div>`).join("") : '<p class="empty">Todavía no hay avisos.</p>'}
     </section>`;
+    const pb = $("#proy"); if(pb) pb.onclick = async () => {
+      window.open(enClase.presentacion, "_blank", "noopener");
+      try{ await F.setDoc(F.doc(db, "publico", "presentacion"), { activa: true, clase: enClase.id, n: enClase.n, url: enClase.presentacion, desde: F.serverTimestamp() }); }
+      catch(e){ console.error(e); toast("No se pudo compartir con los estudiantes."); }
+    };
+    const nc = $("#noComp"); if(nc) nc.onclick = async () => { try{ await F.setDoc(F.doc(db, "publico", "presentacion"), { activa: false }, { merge: true }); }catch(e){ toast("No se pudo guardar."); } };
     $("#nuevo").onclick = () => { editando = "nuevo"; draw(); $("#avT").focus(); };
     main.querySelectorAll("[data-ed]").forEach(b => b.onclick = () => { editando = b.dataset.ed; draw(); });
     main.querySelectorAll("[data-del]").forEach(b => b.onclick = async () => {
@@ -92,6 +124,7 @@ iniciar({ area: "docente", activo: "Inicio", titulo: "Hola, Nicolás", fondo: "i
     }catch(e){ console.error(e); toast("No se pudo guardar."); }
   }
   draw();
+  if(enClase) F.onSnapshot(F.doc(db, "publico", "presentacion"), d => { presAct = d.data() || null; if(!editando) draw(); }, () => {});
 });
 </script>
 </body>

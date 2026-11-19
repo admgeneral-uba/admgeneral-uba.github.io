@@ -10,6 +10,10 @@ export const CURSO_INFO = {
   // Hora en que termina la clase: a partir de ese momento se habilita la presentación del día.
   horaFin: "09:00",
 
+  // Desde qué hora se muestra el sitio en "modo clase" los días de clase.
+  horaInicioEstudiantes: "07:00",
+  horaInicioDocente: "05:00",
+
   // Enlace a la carpeta del curso en Google Drive (aparece en Materiales).
   driveUrl: "https://drive.google.com/",
 };

@@ -10,14 +10,16 @@
 // Enlaces de prueba con fecha simulada (DDMMAA o DDMMAAAA):
 //   /test/fecha140427          → vista estudiante en esa fecha
 //   /docente/test/fecha140427  → área docente en esa fecha
+//   Se puede agregar la hora: /test/fecha160427/hora0740
 (function(){
   const p = location.pathname.replace(/\/+$/, "").toLowerCase();
-  const m = p.match(/^\/(docente\/)?test(?:\/fecha(\d{2})(\d{2})(\d{2}|\d{4}))?$/);
+  const m = p.match(/^\/(docente\/)?test(?:\/fecha(\d{2})(\d{2})(\d{2}|\d{4})(?:\/hora(\d{2}):?(\d{2}))?)?$/);
   if(!m) return;
   let f = null;
   if(m[2]){
     const a = m[4].length === 2 ? "20" + m[4] : m[4], d = new Date(a + "-" + m[3] + "-" + m[2] + "T12:00:00");
     if(!isNaN(d) && d.getDate() === +m[2]) f = a + "-" + m[3] + "-" + m[2];
+    if(f && m[5] && +m[5] < 24 && +m[6] < 60) f += "T" + m[5] + ":" + m[6];
   }
   try{
     if(m[1]){

@@ -27,10 +27,11 @@ if(PRUEBA && configurado){
 const ss = k => { try{ return sessionStorage.getItem(k); }catch(e){ return null; } };
 export const FECHA_PEDIDA = PRUEBA ? ss("fechaPrueba") : ss("fechaDocente");
 const FECHA_PRUEBA = PRUEBA ? (docenteEnPrueba ? FECHA_PEDIDA : null) : FECHA_PEDIDA;
-export const fechaCorta = f => f ? f.slice(8, 10) + f.slice(5, 7) + f.slice(2, 4) : "";
+// "2027-04-14T07:40" → "fecha140427/hora0740" (para los enlaces /test/… y /docente/test/…)
+export const rutaFecha = f => f ? "fecha" + f.slice(8, 10) + f.slice(5, 7) + f.slice(2, 4) + (f.length > 10 ? "/hora" + f.slice(11, 13) + f.slice(14, 16) : "") : "";
 const T0 = Date.now();
 // Momento actual (simulado en la vista de prueba del docente).
-export const ahora = () => FECHA_PRUEBA ? Date.parse(FECHA_PRUEBA + "T10:00:00-03:00") + (Date.now() - T0) : Date.now();
+export const ahora = () => FECHA_PRUEBA ? Date.parse(FECHA_PRUEBA.length > 10 ? FECHA_PRUEBA + ":00-03:00" : FECHA_PRUEBA + "T10:00:00-03:00") + (Date.now() - T0) : Date.now();
 // En la vista de prueba las escrituras no hacen nada.
 const nada = async () => {};
 const F = PRUEBA ? { ...FS, setDoc: nada, updateDoc: nada, deleteDoc: nada, addDoc: async () => ({ id: "prueba" }),
@@ -86,7 +87,7 @@ function headerHTML(o, user){
   const nav = (o.area === "docente" ? NAV_DOC : NAV_EST).map(([t, h]) => `<a href="${h}"${t === o.activo ? ' aria-current="page"' : ""}>${t}</a>`).join("");
   const av = user ? (user.photoURL ? `<img src="${esc(user.photoURL)}" alt="" referrerpolicy="no-referrer">` : `<span class="ini">${esc(iniciales(user.displayName))}</span>`) : "";
   const me = !user ? "" : o.area === "docente"
-    ? `<span class="me">${av}<a href="${FECHA_PRUEBA ? "/test/fecha" + fechaCorta(FECHA_PRUEBA) : "index.html"}" class="out">Ver como estudiante</a><button class="out" id="salir" type="button">Salir</button></span>`
+    ? `<span class="me">${av}<a href="${FECHA_PRUEBA ? "/test/" + rutaFecha(FECHA_PRUEBA) : "index.html"}" class="out">Ver como estudiante</a><button class="out" id="salir" type="button">Salir</button></span>`
     : `<a class="me${o.activo === "Perfil" ? " on" : ""}" href="perfil.html" aria-label="Perfil" title="Perfil"${o.activo === "Perfil" ? ' aria-current="page"' : ""}>${av}</a>`;
   const extra = "";
   const brand = o.area === "docente"
@@ -164,11 +165,11 @@ export function iniciar(o, alListo){
     }
     if(o.area === "docente"){
       const v = ss("volverPrueba");
-      if(v){ try{ sessionStorage.removeItem("volverPrueba"); }catch(e){} location.replace("/test/fecha" + fechaCorta(v)); return; }
+      if(v){ try{ sessionStorage.removeItem("volverPrueba"); }catch(e){} location.replace("/test/" + rutaFecha(v)); return; }
       if(FECHA_PRUEBA){
         const bar = document.createElement("div"); bar.className = "simula";
-        const [a, m, d] = FECHA_PRUEBA.split("-");
-        bar.innerHTML = `<span>Fecha simulada: <b>${d}/${m}/${a}</b></span><button type="button" class="btn small">Volver a la fecha real</button>`;
+        const [a, m, d] = FECHA_PRUEBA.slice(0, 10).split("-");
+        bar.innerHTML = `<span>Fecha simulada: <b>${d}/${m}/${a}${FECHA_PRUEBA.length > 10 ? " · " + FECHA_PRUEBA.slice(11) + " hs" : ""}</b></span><button type="button" class="btn small">Volver a la fecha real</button>`;
         bar.querySelector("button").onclick = () => { try{ sessionStorage.removeItem("fechaDocente"); }catch(e){} location.href = "/docente.html"; };
         main.before(bar);
       }
@@ -238,6 +239,17 @@ export function diasDeTest(clases, i){
 }
 // Hora argentina (UTC-3, sin horario de verano).
 export const inicioDia = isoD => new Date(isoD + "T00:00:00-03:00");
+// Clase en curso: la clase de hoy, entre la hora indicada y el fin de la clase (estudiantes 7 hs, docente 5 hs).
+export function claseEnCurso(clases, desde){
+  const hoy = hoyISO(), c = clases.find(x => x.fecha === hoy); if(!c) return null;
+  const t = ahora(), ini = Date.parse(hoy + "T" + desde + ":00-03:00");
+  return t >= ini && t < finClase(hoy).getTime() ? c : null;
+}
+// Enlace de Drive → vista previa para insertar en la página.
+export function vistaPrevia(url){
+  const u = String(url || ""), m = u.match(/\/d\/([\w-]{20,})/) || u.match(/[?&]id=([\w-]{20,})/);
+  return m ? `https://drive.google.com/file/d/${m[1]}/preview` : u;
+}
 export const finClase = isoD => new Date(isoD + "T" + (CURSO_INFO.horaFin || "09:00") + ":00-03:00");
 export const normal = s => String(s || "").toUpperCase().normalize("NFD").replace(/N\u0303/g, "Ñ").replace(/[\u0300-\u036f]/g, "").replace(/[^A-ZÑ]/g, "");
 export async function misDesafios(uid){
