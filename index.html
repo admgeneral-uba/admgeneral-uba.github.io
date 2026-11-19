@@ -87,13 +87,13 @@ iniciar({ area: "estudiantes", activo: "Inicio", titulo: "Inicio" }, async (user
         : `<h2>¡Hola${nombre ? ", " + esc(nombre) : ""}!</h2><p class="empty">Pronto vas a ver acá el cronograma de las clases.</p>`}
       </div>
         ${enClase ? '<div id="pres"></div><div id="vivoC"></div>' : ""}
-        <div class="card"><h2>Materiales</h2><div class="row"><a class="btn" href="materiales.html">Ver lecturas y presentaciones</a><a class="btn" href="cronograma.html">Cronograma</a></div></div>
-        ${avisos.length ? `<div class="card"><h2>Consignas, tareas y avisos</h2><div class="avs">${avisos.map(a => `<div class="av${hechos[a.id] ? " done" : ""}"><span>${esUrl(a.url) ? `<a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.titulo)}</a>` : esc(a.titulo)}</span><span data-av="${a.id}">${botonToggle("Hecho", !!hechos[a.id])}</span></div>`).join("")}</div></div>` : ""}
-        ${u && u.recomendaciones && u.recomendaciones.length ? `<div class="card"><h2>Recomendaciones</h2><div class="rec">${u.recomendaciones.map(r => `<div>${esUrl(r.url) ? `<a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.titulo)}</a>` : `<b>${esc(r.titulo)}</b>`}${r.descripcion ? `<p>${esc(r.descripcion)}</p>` : ""}</div>`).join("")}</div></div>` : ""}
+        <div class="card fuera-clase"><h2>Materiales</h2><div class="row"><a class="btn" href="materiales.html">Ver lecturas y presentaciones</a><a class="btn" href="cronograma.html">Cronograma</a></div></div>
+        ${avisos.length ? `<div class="card fuera-clase"><h2>Consignas, tareas y avisos</h2><div class="avs">${avisos.map(a => `<div class="av${hechos[a.id] ? " done" : ""}"><span>${esUrl(a.url) ? `<a href="${esc(a.url)}" target="_blank" rel="noopener">${esc(a.titulo)}</a>` : esc(a.titulo)}</span><span data-av="${a.id}">${botonToggle("Hecho", !!hechos[a.id])}</span></div>`).join("")}</div></div>` : ""}
+        ${u && u.recomendaciones && u.recomendaciones.length ? `<div class="card fuera-clase"><h2>Recomendaciones</h2><div class="rec">${u.recomendaciones.map(r => `<div>${esUrl(r.url) ? `<a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.titulo)}</a>` : `<b>${esc(r.titulo)}</b>`}${r.descripcion ? `<p>${esc(r.descripcion)}</p>` : ""}</div>`).join("")}</div></div>` : ""}
       </div>
       <div class="side" id="lado"><section class="game" id="test" hidden></section><section class="game" id="tt" hidden></section></div>
     </div>`;
-  if(enClase) main.querySelector(".cols").classList.add("uno");
+  if(enClase){ main.querySelector(".cols").classList.add("uno"); main.querySelectorAll(".fuera-clase").forEach(e => e.remove()); }
   else desafios(user, clases, hoy).finally(() => { if(document.getElementById("test").hidden && document.getElementById("tt").hidden) main.querySelector(".cols").classList.add("uno"); });
 
   main.querySelectorAll("[data-av]").forEach(w => w.addEventListener("click", async () => {
