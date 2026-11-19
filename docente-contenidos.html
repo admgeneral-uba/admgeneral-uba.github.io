@@ -16,7 +16,7 @@ details.u>summary .num{font-family:var(--serif);font-weight:700;font-size:20px;c
 details.u[open]>summary{border-bottom:1px solid var(--line)}
 .ub{padding:18px 24px 22px;display:flex;flex-direction:column;gap:22px}
 .ub h3{margin:0 0 10px;font-size:18px}
-.prow{display:grid;grid-template-columns:minmax(0,260px) minmax(0,1fr) auto;gap:10px;align-items:center;margin-bottom:8px}
+.prow{display:grid;grid-template-columns:minmax(0,260px) minmax(0,1fr) auto auto;gap:10px;align-items:center;margin-bottom:8px}
 .prow .t{font-weight:700}
 .lrow{display:grid;grid-template-columns:150px minmax(0,1fr) minmax(0,280px) 40px;gap:8px;align-items:start;margin-bottom:8px}
 .rrow{display:grid;grid-template-columns:130px minmax(0,220px) minmax(0,1fr) minmax(0,240px) 40px;gap:8px;align-items:start;margin-bottom:8px}
@@ -29,14 +29,16 @@ details.u[open]>summary{border-bottom:1px solid var(--line)}
 </head>
 <body>
 <script type="module">
-import { iniciar, db, F, esc, toast, UNIDADES, leerClases, leerUnidades, corta, esUrl, $ } from "./app.js";
+import { iniciar, db, F, esc, toast, UNIDADES, leerClases, leerUnidades, corta, esUrl, $, finClase } from "./app.js";
 import { UNIDADES_BASE } from "./datos-base.js";
 
 const TIPOS_L = ["Obligatoria", "Complementaria"];
 const TIPOS_R = ["Video", "Artículo", "Podcast", "Libro", "Sitio"];
 
 iniciar({ area: "docente", activo: "Contenidos", titulo: "Contenidos", fondo: "intenso" }, async (user, main) => {
-  const [clases, unidades] = await Promise.all([leerClases(), leerUnidades()]);
+  const [clases, unidades, presS] = await Promise.all([leerClases(), leerUnidades(), F.getDocs(F.collection(db, "presentaciones"))]);
+  const PRES = presS.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => a.id.localeCompare(b.id));
+  const LEJOS = F.Timestamp.fromDate(new Date("2100-01-01T00:00:00Z"));
 
   if(!Object.keys(unidades).length){
     main.innerHTML = `<div class="card"><h2>Todavía no hay unidades cargadas</h2>
@@ -53,11 +55,11 @@ iniciar({ area: "docente", activo: "Contenidos", titulo: "Contenidos", fondo: "i
   UNIDADES.forEach(u => {
     const d = unidades[u] || {};
     estado[u] = { nombre: d.nombre || "", lecturas: (d.lecturas || []).map(x => ({ ...x })), recomendaciones: (d.recomendaciones || []).map(x => ({ ...x })),
-      clases: clases.filter(c => c.unidad === u).map(c => ({ id: c.id, n: c.n, fecha: c.fecha, titulo: c.titulo, presentacion: c.presentacion || "", orig: c.presentacion || "" })) };
+      clases: clases.filter(c => c.unidad === u).map(c => ({ id: c.id, n: c.n, fecha: c.fecha, titulo: c.titulo, deck: c.deck || "", orig: c.deck || "" })) };
   });
   const abiertas = new Set();
   const opt = (v, arr) => arr.map(o => `<option${o === v ? " selected" : ""}>${o}</option>`).join("");
-  const pill = url => !url ? '<span class="pill na">Sin cargar</span>' : esUrl(url) ? '<span class="pill ok">Cargada</span>' : '<span class="pill bad">Enlace no válido</span>';
+  const pill = deck => { const p = PRES.find(x => x.id === deck); return p ? `<span class="pill ok">${p.n} diapositivas</span>` : '<span class="pill na">Sin presentación</span>'; };
 
   function unidadHTML(u){
     const e = estado[u];
@@ -67,8 +69,8 @@ iniciar({ area: "docente", activo: "Contenidos", titulo: "Contenidos", fondo: "i
         <div><label class="l" for="nom-${u}">Nombre de la unidad</label><input type="text" id="nom-${u}" data-k="nombre" value="${esc(e.nombre)}" maxlength="90"></div>
         <div><h3>Presentaciones</h3>
           ${e.clases.length ? e.clases.map((c, i) => `<div class="prow"><span class="t">Clase ${c.n} · ${esc(corta(c.fecha))}</span>
-            <input type="url" data-p="${i}" value="${esc(c.presentacion)}" placeholder="Enlace de Google Drive" aria-label="Presentación de la clase ${c.n}">
-            <span data-pill="${i}">${pill(c.presentacion)}</span></div>`).join("") : '<p class="empty">No hay clases de esta unidad en el cronograma.</p>'}
+            <select data-p="${i}" aria-label="Presentación de la clase ${c.n}"><option value="">Sin presentación</option>${PRES.map(p => `<option value="${p.id}"${p.id === c.deck ? " selected" : ""}>${esc(p.titulo || p.id)}</option>`).join("")}</select>
+            <span data-pill="${i}">${pill(c.deck)}</span>${c.deck ? `<a class="btn small" href="presentar.html?c=${c.id}" target="_blank" rel="noopener">Ver</a>` : ""}</div>`).join("") : '<p class="empty">No hay clases de esta unidad en el cronograma.</p>'}
         </div>
         <div><h3>Lecturas</h3>
           ${e.lecturas.map((l, i) => `<div class="lrow">
@@ -114,7 +116,7 @@ iniciar({ area: "docente", activo: "Contenidos", titulo: "Contenidos", fondo: "i
       const u = det.dataset.u, e = estado[u];
       det.addEventListener("toggle", () => det.open ? abiertas.add(u) : abiertas.delete(u));
       det.querySelector('[data-k="nombre"]').oninput = ev => e.nombre = ev.target.value;
-      det.querySelectorAll("[data-p]").forEach(inp => inp.oninput = () => { const i = +inp.dataset.p; e.clases[i].presentacion = inp.value.trim(); det.querySelector(`[data-pill="${i}"]`).innerHTML = pill(e.clases[i].presentacion); });
+      det.querySelectorAll("[data-p]").forEach(inp => inp.onchange = () => { const i = +inp.dataset.p; e.clases[i].deck = inp.value; det.querySelector(`[data-pill="${i}"]`).innerHTML = pill(e.clases[i].deck); });
       det.querySelectorAll("[data-l]").forEach(inp => inp.oninput = () => e.lecturas[+inp.dataset.l][inp.dataset.f] = inp.value);
       det.querySelectorAll("[data-r]").forEach(inp => inp.oninput = () => e.recomendaciones[+inp.dataset.r][inp.dataset.f] = inp.value);
       det.querySelectorAll("[data-dl]").forEach(b => b.onclick = () => { e.lecturas.splice(+b.dataset.dl, 1); draw(); });
@@ -130,7 +132,7 @@ iniciar({ area: "docente", activo: "Contenidos", titulo: "Contenidos", fondo: "i
 
   async function guardar(u, btn){
     const e = estado[u];
-    const malas = [...e.clases.map(c => c.presentacion), ...e.lecturas.map(l => l.url), ...e.recomendaciones.map(r => r.url)].filter(x => x && !esUrl(x));
+    const malas = [...e.lecturas.map(l => l.url), ...e.recomendaciones.map(r => r.url)].filter(x => x && !esUrl(x));
     if(malas.length){ toast("Hay un enlace que no es válido. Tiene que empezar con https://"); return; }
     btn.disabled = true;
     try{
@@ -140,9 +142,16 @@ iniciar({ area: "docente", activo: "Contenidos", titulo: "Contenidos", fondo: "i
         lecturas: e.lecturas.filter(l => l.cita.trim()).map(l => ({ tipo: l.tipo, cita: l.cita.trim(), url: (l.url || "").trim() })),
         recomendaciones: e.recomendaciones.filter(r => r.titulo.trim()).map(r => ({ tipo: r.tipo, titulo: r.titulo.trim(), descripcion: (r.descripcion || "").trim(), url: (r.url || "").trim() }))
       });
-      e.clases.filter(c => c.presentacion !== c.orig).forEach(c => b.update(F.doc(db, "clases", c.id), { presentacion: c.presentacion }));
+      // Al asignar una presentación, sus diapositivas se liberan completas al terminar esa clase.
+      const libre = (deck, ts) => { const p = PRES.find(x => x.id === deck); if(!p) return; b.set(F.doc(db, "presentaciones", deck), { libreDesde: ts }, { merge: true }); for(let k = 1; k <= p.n; k++) b.update(F.doc(db, "diapositivas", deck + "_" + String(k).padStart(2, "0")), { libreDesde: ts }); };
+      const usadas = () => Object.values(estado).flatMap(x => x.clases.map(c => c.deck)).filter(Boolean);
+      e.clases.filter(c => c.deck !== c.orig).forEach(c => {
+        b.update(F.doc(db, "clases", c.id), { deck: c.deck });
+        if(c.deck) libre(c.deck, F.Timestamp.fromDate(finClase(c.fecha)));
+        if(c.orig && !usadas().includes(c.orig)) libre(c.orig, LEJOS);
+      });
       await b.commit();
-      e.clases.forEach(c => c.orig = c.presentacion);
+      e.clases.forEach(c => c.orig = c.deck);
       toast(`Unidad ${u} guardada`); draw();
     }catch(err){ console.error(err); toast("No se pudo guardar. Probá de nuevo."); btn.disabled = false; }
   }

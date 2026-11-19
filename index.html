@@ -52,8 +52,9 @@
 .res{margin:6px 0 0;font-weight:700}
 .res.ok{color:var(--ok)}.res.bad{color:var(--bad)}
 .mini{display:grid;gap:6px;max-width:340px}
-.pres .marco{position:relative;aspect-ratio:16/10;border-radius:12px;overflow:hidden;background:#1F2340}
+.pres .marco{position:relative;aspect-ratio:16/9;border-radius:12px;overflow:hidden;background:#1F2340}
 .pres iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.pres img.diapo{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
 .mini span{aspect-ratio:1;border:2px solid var(--line);border-radius:7px}
 </style>
 </head>
@@ -118,7 +119,18 @@ iniciar({ area: "estudiantes", activo: "Inicio", titulo: "Inicio" }, async (user
   };
   // Presentación que está proyectando el profesor
   if(enClase){
-    const pintarPres = p => {
+    const pintarPres = async p => {
+      if(p && p.activa && p.clase === enClase.id && p.deck){
+        try{
+          const d = await F.getDoc(F.doc(db, "diapositivas", p.deck + "_" + String(p.slide || 1).padStart(2, "0")));
+          if(d.exists()){
+            const el = document.getElementById("pres"), img = el.querySelector("img.diapo");
+            if(img){ img.src = d.data().img; img.alt = d.data().texto || ""; return; }
+            el.innerHTML = `<div class="card pres"><h2 style="margin:0 0 12px"><span class="dot"></span>Presentación</h2><div class="marco"><img class="diapo" src="${d.data().img}" alt="${esc(d.data().texto || "")}"></div></div>`;
+            return;
+          }
+        }catch(e){ console.error(e); }
+      }
       const ok = p && p.activa && p.clase === enClase.id && esUrl(p.url);
       document.getElementById("pres").innerHTML = ok
         ? `<div class="card pres"><div class="row between" style="margin-bottom:12px"><h2 style="margin:0"><span class="dot"></span>Presentación</h2><a class="btn small" href="${esc(p.url)}" target="_blank" rel="noopener">Abrir en pantalla completa</a></div><div class="marco"><iframe src="${esc(vistaPrevia(p.url))}" title="Presentación de la clase" allow="autoplay; fullscreen" allowfullscreen loading="lazy"></iframe></div></div>`

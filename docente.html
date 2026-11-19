@@ -57,7 +57,7 @@ iniciar({ area: "docente", activo: "Inicio", titulo: "Hola, Nicolás", fondo: "i
     const compartiendo = presAct && presAct.activa && presAct.clase === c.id;
     return `<div class="card clasehoy"><span class="kick"><span class="dot"></span>Clase de hoy</span>
       <h3>Clase ${c.n}: ${esc(c.titulo)}</h3><div class="muted">${esc(larga(c.fecha))} · ${esc(c.modalidad)}${c.unidad ? " · Unidad " + c.unidad : ""}</div>
-      <div class="acc">${esUrl(c.presentacion)
+      <div class="acc">${c.deck || esUrl(c.presentacion)
         ? `<button class="btn primary grande" id="proy" type="button">Proyectar presentación</button>`
         : `<span class="sinpres">Todavía no cargaste la presentación de esta clase. <a href="docente-contenidos.html">Cargarla en Contenidos</a></span>`}
         <a class="btn grande" href="docente-asistencia.html">Tomar asistencia</a></div>
@@ -88,6 +88,7 @@ iniciar({ area: "docente", activo: "Inicio", titulo: "Hola, Nicolás", fondo: "i
         <div class="acts"><button class="btn link" type="button" data-ed="${a.id}">Editar</button><button class="btn link" type="button" data-del="${a.id}">Borrar</button></div></div>`).join("") : '<p class="empty">Todavía no hay avisos.</p>'}
     </section>`;
     const pb = $("#proy"); if(pb) pb.onclick = async () => {
+      if(enClase.deck){ window.open("presentar.html?c=" + enClase.id, "_blank"); return; }
       window.open(enClase.presentacion, "_blank", "noopener");
       try{ await F.setDoc(F.doc(db, "publico", "presentacion"), { activa: true, clase: enClase.id, n: enClase.n, url: enClase.presentacion, desde: F.serverTimestamp() }); }
       catch(e){ console.error(e); toast("No se pudo compartir con los estudiantes."); }

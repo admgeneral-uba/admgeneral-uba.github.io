@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Presentación · Administración General</title>
+<link rel="icon" href="img/uba.png">
+<link rel="stylesheet" href="sitio.css">
+<style>
+.visor{position:relative;aspect-ratio:16/9;background:#1F2340;border-radius:14px;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.visor img{width:100%;height:100%;object-fit:contain}
+.visor:fullscreen{border-radius:0;background:#000}
+.ctl{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;margin-top:14px}
+.ctl .n{min-width:80px;text-align:center;font-weight:700}
+</style>
+</head>
+<body>
+<script type="module">
+import { iniciar, db, F, esc, $ } from "./app.js";
+const nn = n => String(n).padStart(2, "0");
+iniciar({ area: "estudiantes", activo: "Materiales", titulo: "Presentación" }, async (user, main) => {
+  const cid = new URLSearchParams(location.search).get("c");
+  const c = await F.getDoc(F.doc(db, "clases", cid || "x"));
+  if(!c.exists() || !c.data().deck){ main.innerHTML = '<div class="card"><h2>Esta clase no tiene presentación</h2><a class="btn" href="materiales.html">Volver a Materiales</a></div>'; return; }
+  const clase = c.data(), deck = clase.deck;
+  const p = await F.getDoc(F.doc(db, "presentaciones", deck)); const total = p.exists() ? p.data().n : 0;
+  main.innerHTML = `<div class="card"><h2 style="margin-bottom:14px">Clase ${clase.n}: ${esc(clase.titulo)}</h2>
+    <div class="visor" id="visor"><img id="img" alt=""></div>
+    <div class="ctl"><button class="btn" id="ant" type="button">← Anterior</button><span class="n" id="num"></span><button class="btn" id="sig" type="button">Siguiente →</button><button class="btn" id="pc" type="button">Pantalla completa</button></div></div>
+    <div class="row"><a class="btn" href="materiales.html">Volver a Materiales</a></div>`;
+  let n = 1; const cache = {};
+  const traer = async k => { if(cache[k] !== undefined) return cache[k]; try{ const d = await F.getDoc(F.doc(db, "diapositivas", deck + "_" + nn(k))); cache[k] = d.exists() ? d.data() : null; }catch(e){ cache[k] = null; } return cache[k]; };
+  const mostrar = async () => {
+    const d = await traer(n);
+    if(!d){ $("#visor").innerHTML = '<p style="color:#fff;padding:20px;text-align:center">La presentación estará disponible cuando termine la clase.</p>'; $("#num").textContent = ""; return; }
+    $("#img").src = d.img; $("#img").alt = d.texto || `Diapositiva ${n}`; $("#num").textContent = `${n} / ${total}`;
+    $("#ant").disabled = n === 1; $("#sig").disabled = n === total;
+    if(n < total) traer(n + 1);
+  };
+  $("#ant").onclick = () => { if(n > 1){ n--; mostrar(); } };
+  $("#sig").onclick = () => { if(n < total){ n++; mostrar(); } };
+  $("#pc").onclick = () => document.fullscreenElement ? document.exitFullscreen() : $("#visor").requestFullscreen().catch(() => {});
+  document.addEventListener("keydown", e => { if(e.key === "ArrowRight" || e.key === "PageDown"){ $("#sig").click(); } else if(e.key === "ArrowLeft" || e.key === "PageUp"){ $("#ant").click(); } });
+  mostrar();
+});
+</script>
+</body>
+</html>

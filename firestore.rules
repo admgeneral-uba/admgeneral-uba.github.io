@@ -126,6 +126,17 @@ service cloud.firestore {
 
     // Cronograma, unidades, avisos y documentos: los ve cualquiera que ingresó; los edita el docente.
     match /clases/{id}   { allow read: if lector(); allow write: if esDocente(); }
+    // Presentaciones en diapositivas. Cada diapositiva se puede leer recién cuando el docente la proyecta
+    // (o completa al terminar la clase): los estudiantes no pueden adelantarse.
+    match /presentaciones/{id} { allow read: if lector(); allow write: if esDocente(); }
+    match /diapositivas/{id} {
+      allow read: if esDocente() || (lector() && (
+        resource.data.libreDesde <= request.time ||
+        (get(/databases/$(database)/documents/publico/presentacion).data.activa == true &&
+         get(/databases/$(database)/documents/publico/presentacion).data.deck == resource.data.deck &&
+         resource.data.n <= get(/databases/$(database)/documents/publico/presentacion).data.slide)));
+      allow write: if esDocente();
+    }
     match /unidades/{id} { allow read: if lector(); allow write: if esDocente(); }
     match /avisos/{id}   { allow read: if lector(); allow write: if esDocente(); }
     match /curso/{id}    { allow read: if lector(); allow write: if esDocente(); }

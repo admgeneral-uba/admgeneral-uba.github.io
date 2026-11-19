@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Cargar diapositivas</title>
+<link rel="icon" href="img/uba.png">
+<link rel="stylesheet" href="sitio.css">
+</head>
+<body>
+<script type="module">
+import { iniciar, db, F, $ } from "./app.js";
+const LEJOS = F.Timestamp.fromDate(new Date("2100-01-01T00:00:00Z"));
+iniciar({ area: "docente", activo: "", titulo: "Cargar diapositivas" }, async (user, main) => {
+  main.innerHTML = `<div class="card"><h2>Cargar diapositivas</h2><p>Elegí las imágenes (deck_NN.webp) y el archivo deck.json de una presentación.</p>
+    <input type="file" id="arch" multiple accept=".webp,.png,.jpg,.json"><pre id="log" style="white-space:pre-wrap"></pre></div>`;
+  const log = t => $("#log").textContent += t + "\n";
+  const leer = (f, modo) => new Promise((ok, mal) => { const r = new FileReader(); r.onload = () => ok(r.result); r.onerror = mal; modo === "txt" ? r.readAsText(f) : r.readAsDataURL(f); });
+  $("#arch").onchange = async e => {
+    const fs = [...e.target.files], js = fs.find(f => f.name.endsWith(".json"));
+    if(!js){ log("Falta el .json"); return; }
+    const man = JSON.parse(await leer(js, "txt")), deck = man.deck;
+    const imgs = fs.filter(f => !f.name.endsWith(".json")).sort((a, b) => a.name.localeCompare(b.name));
+    if(imgs.length !== man.n){ log(`Se esperaban ${man.n} imágenes y llegaron ${imgs.length}`); return; }
+    const prev = await F.getDoc(F.doc(db, "presentaciones", deck));
+    const libre = prev.exists() && prev.data().libreDesde ? prev.data().libreDesde : LEJOS;
+    let b = F.writeBatch(db), peso = 0;
+    for(let i = 0; i < imgs.length; i++){
+      const img = await leer(imgs[i]); peso += img.length;
+      b.set(F.doc(db, "diapositivas", deck + "_" + String(i + 1).padStart(2, "0")), { deck, n: i + 1, img, texto: man.textos[i] || "", libreDesde: libre });
+      if(peso > 7e6){ await b.commit(); b = F.writeBatch(db); peso = 0; }
+    }
+    b.set(F.doc(db, "presentaciones", deck), { deck, n: man.n, titulo: man.titulo || deck, libreDesde: libre }, { merge: true });
+    await b.commit();
+    log(`✓ ${deck}: ${man.n} diapositivas`);
+    window.cargadas = (window.cargadas || []).concat(deck);
+    e.target.value = "";
+  };
+});
+</script>
+</body>
+</html>
