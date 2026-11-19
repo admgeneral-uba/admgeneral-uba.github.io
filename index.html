@@ -56,6 +56,7 @@
 <script type="module">
 import { iniciar, db, F, esc, toast, leerClases, leerUnidades, leerMiDoc, larga, hoyISO, esUrl, botonToggle, ICON, CURSO_INFO, finClase, misDesafios, racha, ahora } from "./app.js";
 import { montarJuego } from "./juegos-ui.js";
+import { TIPOS, tipoDe } from "./juegos.js";
 
 iniciar({ area: "estudiantes", activo: "Inicio", titulo: "Inicio" }, async (user, main) => {
   const [clases, unidades, mio, avs] = await Promise.all([leerClases(), leerUnidades(), leerMiDoc(user.uid), F.getDocs(F.collection(db, "avisos"))]);
@@ -139,7 +140,7 @@ async function desafios(user, clases, hoy){
   for(const c of pasadas.slice(0, 3)){ try{ const d = await F.getDoc(F.doc(db, "juegos", c.id)); if(d.exists()){ j = d.data(); jid = c.id; break; } }catch(e){} }
   if(j){
     const tt = document.getElementById("tt"); tt.hidden = false;
-    tt.innerHTML = `<div class="gh"><b>Tercer tiempo</b><span class="muted small">Clase ${j.n}</span></div><div class="gb"><div id="juego"></div></div>`;
+    tt.innerHTML = `<div class="gh"><b>Tercer tiempo</b><span class="muted small">${TIPOS[tipoDe(j)].nombre}</span></div><div class="gb"><div id="juego"></div></div>`;
     await montarJuego(document.getElementById("juego"), { juego: j, jid, user, db, F, esc });
   }
 }

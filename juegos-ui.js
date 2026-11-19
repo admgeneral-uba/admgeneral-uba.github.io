@@ -4,14 +4,14 @@ import { normal, TIPOS, tipoDe, rng, barajar, armarSopa, armarCrucigrama } from 
 export async function montarJuego(root, o){
   const { juego, jid, user, db, F, esc } = o;
   const $ = s => root.querySelector(s);
-  const ESTILO = new URL("./juegos.css", import.meta.url).href;
+  const ESTILO = new URL("./juegos.css?v=3", import.meta.url).href;
   if(!document.querySelector(`link[href="${ESTILO}"]`)){ const l = document.createElement("link"); l.rel = "stylesheet"; l.href = ESTILO; document.head.appendChild(l); }
   const tipo = tipoDe(juego), rid = jid + "_" + user.uid;
   const S = { intentos: [], terminado: false, gano: false };
   try{ const d = await F.getDoc(F.doc(db, "jugadas", rid)); if(d.exists()) Object.assign(S, { intentos: d.data().intentos || [], terminado: d.data().terminado, gano: d.data().gano }); }catch(e){}
 
   root.classList.add("tj");
-  root.innerHTML = `${o.titulo ? `<h2 style="margin:0;text-align:center">Clase ${juego.n}: ${esc(juego.titulo)}</h2>` : ""}<p class="tipo" style="margin:0;text-align:center"><b${o.titulo ? "" : ' style="font-family:var(--serif);font-size:22px;display:block"'}>${TIPOS[tipo].nombre}${o.titulo ? "." : ""}</b> ${esc(juego.tema && tipo === "sopa" ? "Tema: " + juego.tema : TIPOS[tipo].desc)}</p><div class="zona" id="zona"></div><div class="msg" id="msg" role="status"></div><div id="fin" style="width:100%"></div>`;
+  root.innerHTML = `${o.titulo ? `<h2 style="margin:0;text-align:center">Clase ${juego.n}: ${esc(juego.titulo)}</h2>` : ""}${o.titulo ? `<p class="tipo" style="margin:0;text-align:center"><b>${TIPOS[tipo].nombre}.</b> ${esc(juego.tema && tipo === "sopa" ? "Tema: " + juego.tema : TIPOS[tipo].desc)}</p>` : tipo === "sopa" ? "" : `<p class="tipo" style="margin:0;text-align:center">${TIPOS[tipo].desc}</p>`}<div class="zona" id="zona"></div><div class="msg" id="msg" role="status"></div><div id="fin" style="width:100%"></div>`;
   const Z = $("#zona"), msg = t => $("#msg").textContent = t || "";
   const sacudir = el => { el.classList.remove("shake"); el.offsetWidth; el.classList.add("shake"); };
   let onKey = null;
