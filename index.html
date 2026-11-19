@@ -30,7 +30,7 @@
 .av:first-child{border-top:0;padding-top:0}
 .av.done>span:first-child{color:var(--muted)}
 .rec p{margin:2px 0 0;color:var(--text);font-size:16px}
-.duo{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:24px}
+.duo{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:24px;align-items:start}
 .duo .game{background:var(--paper);border:1px solid var(--line);border-radius:16px;overflow:hidden}
 .gh{background:#E9B5D0 url(img/fondo-intenso.jpg) center/cover;padding:14px 22px;display:flex;justify-content:space-between;align-items:center;gap:10px}
 .gh b{font-family:var(--serif);font-size:22px;background:rgba(255,255,255,.85);border-radius:8px;padding:2px 10px}
@@ -55,7 +55,7 @@
 <body>
 <script type="module">
 import { iniciar, db, F, esc, toast, leerClases, leerUnidades, leerMiDoc, larga, hoyISO, esUrl, botonToggle, ICON, CURSO_INFO, finClase, misDesafios, racha, ahora } from "./app.js";
-import { TIPOS, tipoDe } from "./juegos.js";
+import { montarJuego } from "./juegos-ui.js";
 
 iniciar({ area: "estudiantes", activo: "Inicio", titulo: "Inicio" }, async (user, main) => {
   const [clases, unidades, mio, avs] = await Promise.all([leerClases(), leerUnidades(), leerMiDoc(user.uid), F.getDocs(F.collection(db, "avisos"))]);
@@ -139,12 +139,8 @@ async function desafios(user, clases, hoy){
   for(const c of pasadas.slice(0, 3)){ try{ const d = await F.getDoc(F.doc(db, "juegos", c.id)); if(d.exists()){ j = d.data(); jid = c.id; break; } }catch(e){} }
   if(j){
     const tt = document.getElementById("tt"); tt.hidden = false;
-    const mia = mis.jugadas.find(x => x.juego === jid);
-    const tp = tipoDe(j);
-    const estado = !mia ? TIPOS[tp].desc : mia.terminado ? (mia.gano ? "¡Lo resolviste!" : "Esta vez no salió.") : "Tenés un juego empezado.";
-    tt.innerHTML = `<div class="gh"><b>Tercer tiempo</b><span class="muted small">Clase ${j.n}</span></div><div class="gb">
-      <p style="margin:0;font-family:var(--serif);font-size:22px;font-weight:700">${TIPOS[tp].nombre}</p>
-      <p style="margin:8px 0 12px">${estado}</p><a class="btn ${mia && mia.terminado ? "" : "primary"}" href="tercer-tiempo.html">${!mia ? "Jugar" : mia.terminado ? "Ver resultado" : "Seguir jugando"}</a></div>`;
+    tt.innerHTML = `<div class="gh"><b>Tercer tiempo</b><span class="muted small">Clase ${j.n}</span></div><div class="gb"><div id="juego"></div></div>`;
+    await montarJuego(document.getElementById("juego"), { juego: j, jid, user, db, F, esc });
   }
 }
 </script>
