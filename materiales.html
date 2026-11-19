@@ -41,7 +41,7 @@ iniciar({ area: "estudiantes", activo: "Materiales", titulo: "Materiales" }, asy
         const ok = claseTerminada(c.fecha) && esUrl(c.presentacion);
         return `<div class="it"><div class="tx"><b>Presentación de la clase ${c.n}</b></div><div class="ac">${ok ? abrir(c.presentacion, "Abrir PDF") : '<span class="pill na">Aún no disponible</span>'}</div></div>`;
       }).join("")}` : ""}
-      ${lect.length ? `<h3>Lecturas</h3>${lect.map((l, i) => `<div class="it"><div class="tx">${esc(l.cita)}</div><div class="ac">${abrir(l.url)}${tog(`${u}-l${i}`, "Leída")}</div></div>`).join("")}` : ""}
+      ${lect.length ? `<h3>Lecturas</h3>${lect.map((l, i) => `<div class="it"><div class="tx">${esc(l.cita)}</div><div class="ac">${esUrl(l.url) ? abrir(l.url) : '<span class="pill na">Aún no disponible</span>'}${tog(`${u}-l${i}`, "Leída")}</div></div>`).join("")}` : ""}
       ${rec.length ? `<h3>Recomendaciones</h3>${rec.map((r, i) => `<div class="it"><div class="tx"><b>${esc(r.titulo)}</b>${r.descripcion ? `<p>${esc(r.descripcion)}</p>` : ""}</div><div class="ac">${abrir(r.url)}${tog(`${u}-r${i}`, "Visto")}</div></div>`).join("")}` : ""}
     </details>`;
   }).join("");
