@@ -126,7 +126,7 @@ body.proj .projqr .qr{padding:0}
     </nav>
   </div>
   <div>
-    <a class="back" href="recursos.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Recursos</a>
+    <a class="back" href="docente.html"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Inicio</a>
     <h1 class="serif">Encuesta en vivo</h1>
   </div>
 </div></header>
@@ -186,7 +186,10 @@ function drawOpts(){
   $("#opts").querySelectorAll("[data-rm]").forEach(el => el.onclick = () => { opts.splice(+el.dataset.rm, 1); drawOpts(); });
   $("#addOpt").hidden = opts.length >= 6;
 }
-document.querySelectorAll(".ideas button").forEach(b => b.onclick = () => { $("#q").value = b.textContent; opts = b.dataset.o.split("|"); drawOpts(); });
+document.querySelector(".ideas").addEventListener("click", e => { const b = e.target.closest("button"); if(!b) return; $("#q").value = b.textContent; opts = b.dataset.o.split("|"); drawOpts(); });
+import("./preparados.js").then(m => m.montarPreparados({ tipo: "encuesta",
+  leer: () => ({ q: $("#q").value.trim(), opts: opts.map(o => String(o).trim()).filter(Boolean) }),
+  aplicar: d => { $("#q").value = d.q || ""; if(d.opts && d.opts.length) { opts = d.opts.slice(); drawOpts(); } } })).catch(e => console.error(e));
 $("#addOpt").onclick = () => { if(opts.length < 6){ opts.push(""); drawOpts(); $("#opts").querySelectorAll("input")[opts.length - 1].focus(); } };
 $("#launch").onclick = launch;
 $("#reset").onclick = reset;

@@ -80,7 +80,7 @@ export const ICON = {
 
 /* ---------- encabezado y pie ---------- */
 const NAV_EST = [["Cronograma", "cronograma.html"], ["Materiales", "materiales.html"], ["Información", "informacion.html"]];
-const NAV_DOC = [["Asistencia", "docente-asistencia.html"], ["Cronograma", "docente-cronograma.html"], ["Contenidos", "docente-contenidos.html"], ["Desafíos", "docente-desafios.html"], ["Recursos", "recursos.html"], ["Estudiantes", "docente-estudiantes.html"]];
+const NAV_DOC = [["Cronograma", "docente-cronograma.html"], ["Contenidos", "docente-contenidos.html"], ["Desafíos", "docente-desafios.html"], ["Recursos", "recursos.html"], ["Estudiantes", "docente-estudiantes.html"]];
 
 function iniciales(n){ return String(n || "?").split(/\s+/).filter(Boolean).slice(0, 2).map(p => p[0].toUpperCase()).join(""); }
 function headerHTML(o, user){

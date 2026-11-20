@@ -19,12 +19,15 @@ td{padding:9px 8px;border-bottom:1px solid var(--line2);vertical-align:middle}
 .who{display:flex;gap:10px;align-items:center}
 .who img,.who .ini{width:36px;height:36px;border-radius:50%;object-fit:cover;background:var(--live);color:#fff;font-weight:700;font-size:14px;display:flex;align-items:center;justify-content:center;flex:none}
 .who small{color:var(--muted);font-size:14px}
+.nums{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,180px),1fr));gap:14px}
+.nums div{background:var(--soft);border-radius:12px;padding:14px 16px}
+.nums b{font-family:var(--serif);font-size:34px;line-height:1;display:block;margin-bottom:4px}
 td input.nota{width:62px;padding:6px 8px;text-align:center}
 </style>
 </head>
 <body>
 <script type="module">
-import { iniciar, db, F, esc, toast, $, leerClases, leerTomadas, corta, descargarCSV } from "./app.js";
+import { iniciar, db, F, esc, toast, $, leerClases, leerTomadas, corta, descargarCSV, hoyISO, ahora, finClase } from "./app.js";
 
 iniciar({ area: "docente", activo: "Estudiantes", titulo: "Estudiantes", fondo: "intenso" }, async (user, main) => {
   const [clases, tomadas, est, as, ns, rt, jg] = await Promise.all([leerClases(), leerTomadas(), F.getDocs(F.collection(db, "estudiantes")), F.getDocs(F.collection(db, "asistencias")), F.getDocs(F.collection(db, "notas")), F.getDocs(F.collection(db, "respuestasTest")), F.getDocs(F.collection(db, "jugadas"))]);
@@ -41,7 +44,18 @@ iniciar({ area: "docente", activo: "Estudiantes", titulo: "Estudiantes", fondo: 
   }).sort((a, b) => a.orden.localeCompare(b.orden, "es"));
   const f = { riesgo: false, perfil: false, trabaja: false }; let q = "";
 
-  main.innerHTML = `<div class="row"><button class="btn" id="dA" type="button">Descargar planilla de asistencia</button><button class="btn" id="dP" type="button">Descargar datos de perfiles</button></div>
+  const pcts = L.map(s => s.pct).filter(x => x !== null);
+  const prom = pcts.length ? Math.round(pcts.reduce((a, b) => a + b, 0) / pcts.length) : null, bajo = pcts.filter(x => x < 75).length;
+  const hoy = hoyISO(), rHoy = rt.docs.filter(d => d.data().tid === hoy).length;
+  const ult = clases.filter(c => finClase(c.fecha).getTime() <= ahora()).pop();
+  const jug = ult ? jg.docs.filter(d => d.data().juego === ult.id).length : 0;
+  main.innerHTML = `<section class="card"><h2>El curso en números</h2><div class="nums">
+      <div><b>${L.length}</b>Estudiantes</div>
+      <div><b>${prom === null ? "—" : prom + " %"}</b>Asistencia promedio</div>
+      <div><b>${prom === null ? "—" : bajo}</b>Debajo del 75 %</div>
+      <div><b>${rHoy}</b>Test de lectura de hoy</div>
+      <div><b>${jug}</b>Jugaron el Tercer tiempo${ult ? " de la clase " + ult.n : ""}</div></div></section>
+    <div class="row"><button class="btn" id="dA" type="button">Descargar planilla de asistencia</button><button class="btn" id="dP" type="button">Descargar datos de perfiles</button></div>
     <section class="card"><div class="tools"><input type="text" id="q" placeholder="Buscar por nombre, legajo o email" aria-label="Buscar estudiante">
       <button class="chip" type="button" data-f="riesgo" aria-pressed="false">Debajo del 75 %</button><button class="chip" type="button" data-f="perfil" aria-pressed="false">Perfil incompleto</button><button class="chip" type="button" data-f="trabaja" aria-pressed="false">Trabajan</button></div>
       <div class="tw" id="tabla"></div><p class="muted" id="cnt" style="margin:12px 0 0"></p></section>`;

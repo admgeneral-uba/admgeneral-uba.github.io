@@ -128,6 +128,8 @@ service cloud.firestore {
     match /clases/{id}   { allow read: if lector(); allow write: if esDocente(); }
     // Presentaciones en diapositivas. Cada diapositiva se puede leer recién cuando el docente la proyecta
     // (o completa al terminar la clase): los estudiantes no pueden adelantarse.
+    // Recursos preparados (consignas de nube, encuesta, mural): solo el docente.
+    match /preparados/{id} { allow read, write: if esDocente(); }
     match /presentaciones/{id} { allow read: if lector(); allow write: if esDocente(); }
     match /diapositivas/{id} {
       allow read: if esDocente() || (lector() && (

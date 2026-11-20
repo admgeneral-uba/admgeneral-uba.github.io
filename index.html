@@ -67,7 +67,7 @@ import { TIPOS, tipoDe } from "./juegos.js";
 iniciar({ area: "estudiantes", activo: "Inicio", titulo: "Inicio" }, async (user, main) => {
   const [clases, unidades, mio, avs] = await Promise.all([leerClases(), leerUnidades(), leerMiDoc(user.uid), F.getDocs(F.collection(db, "avisos"))]);
   const hechos = { ...(mio.hechos || {}) };
-  const avisos = avs.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (a.orden || 0) - (b.orden || 0));
+  const avisos = avs.docs.map(d => ({ id: d.id, ...d.data() })).filter(a => !a.desde || !a.desde.toMillis || a.desde.toMillis() <= ahora()).sort((a, b) => (a.orden || 0) - (b.orden || 0));
   const hoy = hoyISO();
   const actual = clases.find(c => c.fecha >= hoy) || clases[clases.length - 1];
   const u = actual && actual.unidad ? unidades[actual.unidad] : null;

@@ -26,6 +26,9 @@
 .sinpres{color:var(--text)}
 .compartiendo{margin-top:14px;display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--ok-bg);border-radius:10px;padding:10px 14px;font-weight:700}
 .recs{display:flex;flex-wrap:wrap;gap:8px}
+.btn.prep{flex-direction:column;align-items:flex-start;gap:0;line-height:1.2}
+.btn.prep small{font-size:12px;font-weight:600;color:var(--muted)}
+#asisHost:not(:empty){margin:0}
 .dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--live);margin-right:8px;animation:p 1.4s infinite}
 @keyframes p{50%{opacity:.35}}
 @media (prefers-reduced-motion:reduce){.dot{animation:none}}
@@ -36,6 +39,8 @@
 <body>
 <script type="module">
 import { iniciar, db, F, esc, toast, $, leerClases, leerTomadas, larga, hoyISO, esUrl, finClase, CURSO_INFO, ahora, claseEnCurso } from "./app.js";
+import { montarAsistencia } from "./asistencia-docente.js";
+import { TIPOS_PREP } from "./preparados.js";
 
 iniciar({ area: "docente", activo: "Inicio", titulo: "Hola, Nicolás", fondo: "intenso" }, async (user, main) => {
   const [clases, tomadas, est, as, avs] = await Promise.all([leerClases(), leerTomadas(), F.getDocs(F.collection(db, "estudiantes")), F.getDocs(F.collection(db, "asistencias")), F.getDocs(F.collection(db, "avisos"))]);
@@ -60,35 +65,42 @@ iniciar({ area: "docente", activo: "Inicio", titulo: "Hola, Nicolás", fondo: "i
       <div class="acc">${c.deck || esUrl(c.presentacion)
         ? `<button class="btn primary grande" id="proy" type="button">Proyectar presentación</button>`
         : `<span class="sinpres">Todavía no cargaste la presentación de esta clase. <a href="docente-contenidos.html">Cargarla en Contenidos</a></span>`}
-        <a class="btn grande" href="docente-asistencia.html">Tomar asistencia</a></div>
+        <a class="btn grande" href="#asisHost">Tomar asistencia</a></div>
       ${compartiendo ? `<div class="compartiendo"><span><span class="dot"></span>Los estudiantes ven la presentación en el inicio del sitio.</span><button class="btn small" id="noComp" type="button">Dejar de compartir</button></div>` : ""}
       <h3 style="font-size:20px;margin:22px 0 10px">Recursos</h3>
-      <div class="recs">${RECURSOS.map(([h, t]) => `<a class="btn" href="${h}">${t}</a>`).join("")}</div></div>`;
+      <div class="recs">${RECURSOS.map(([h, t]) => `<a class="btn" href="${h}">${t}</a>`).join("")}</div>
+      ${prep.length ? `<h3 style="font-size:20px;margin:22px 0 10px">Preparados para hoy</h3><div class="recs">${prep.map(p => `<a class="btn prep" href="${p.tipo}.html?p=${p.id}"><small>${esc(TIPOS_PREP[p.tipo] || p.tipo)}</small>${esc(p.titulo)}</a>`).join("")}</div>` : ""}</div>`;
   };
+  let prep = [];
+  if(enClase){ try{ prep = (await F.getDocs(F.query(F.collection(db, "preparados"), F.where("clase", "==", enClase.id)))).docs.map(d => ({ id: d.id, ...d.data() })); }catch(e){ console.error(e); } }
   const rHoy = (await F.getDocs(F.query(F.collection(db, "respuestasTest"), F.where("tid", "==", hoy)))).size;
   const ult = clases.filter(c => finClase(c.fecha).getTime() <= ahora()).pop();
   const jug = ult ? (await F.getDocs(F.query(F.collection(db, "jugadas"), F.where("juego", "==", ult.id)))).size : 0;
 
+  main.innerHTML = '<div id="zA"></div><div id="asisHost"></div><div id="zB"></div>';
+  const fmt = ts => ts && ts.toDate ? ts.toDate().toLocaleString("es-AR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }) : "";
+  const programado = a => a.desde && a.desde.toMillis && a.desde.toMillis() > ahora();
   function draw(){
-    main.innerHTML = `
+    $("#zA").innerHTML = `
     ${enClase ? panelClase(enClase) : prox ? `<div class="card next"><span class="kick">${prox.fecha === hoy ? "Hoy" : "Próxima clase"}</span>
       <h3>Clase ${prox.n}: ${esc(prox.titulo)}</h3><div class="muted">${esc(larga(prox.fecha))} · ${esc(prox.modalidad)}${prox.unidad ? " · Unidad " + prox.unidad : ""}</div>
       ${prox.temas ? `<ul>${prox.temas.split("\n").filter(Boolean).map(t => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}
-      <div class="row" style="margin-top:16px"><a class="btn primary" href="docente-asistencia.html">Tomar asistencia</a><a class="btn" href="recursos.html">Recursos para la clase</a>${esUrl(prox.presentacion) ? `<a class="btn" href="${esc(prox.presentacion)}" target="_blank" rel="noopener">Presentación</a>` : ""}</div></div>` : ""}
-    <section class="card"><h2>El curso en números</h2><div class="nums">
+      <div class="row" style="margin-top:16px"><a class="btn" href="recursos.html">Recursos para la clase</a>${esUrl(prox.presentacion) ? `<a class="btn" href="${esc(prox.presentacion)}" target="_blank" rel="noopener">Presentación</a>` : ""}</div></div>` : ""}
+`;
+    $("#zB").innerHTML = `${enClase ? "" : `<section class="card"><h2>El curso en números</h2><div class="nums">
       <div><b>${N}</b>Estudiantes</div>
       <div><b>${prom === null ? "—" : prom + " %"}</b>Asistencia promedio</div>
       <div><b>${prom === null ? "—" : bajo}</b>Debajo del 75 %</div>
       <div><b>${rHoy}</b>Test de lectura de hoy</div>
-      <div><b>${jug}</b>Jugaron el Tercer tiempo${ult ? " de la clase " + ult.n : ""}</div></div></section>
+      <div><b>${jug}</b>Jugaron el Tercer tiempo${ult ? " de la clase " + ult.n : ""}</div></div></section>`}
     <section class="card"><div class="row between" style="margin-bottom:6px"><h2 style="margin:0">Consignas, tareas y avisos</h2><button class="btn small" id="nuevo" type="button">Nuevo aviso</button></div>
       ${editando === "nuevo" ? form({}) : ""}
-      ${avisos.length || editando ? avisos.map(a => editando === a.id ? form(a) : `<div class="av"><div><b>${esc(a.titulo)}</b>${a.url ? ` · <a href="${esc(a.url)}" target="_blank" rel="noopener">enlace</a>` : ""}</div>
+      ${avisos.length || editando ? avisos.map(a => editando === a.id ? form(a) : `<div class="av"><div><b>${esc(a.titulo)}</b>${programado(a) ? ` <span class="pill na">Programado: ${fmt(a.desde)}</span>` : ""}${a.url ? ` · <a href="${esc(a.url)}" target="_blank" rel="noopener">enlace</a>` : ""}</div>
         <div class="bar"><div><i style="width:${N ? hechos(a.id) / N * 100 : 0}%"></i></div><span>${hechos(a.id)} de ${N}</span></div>
         <div class="acts"><button class="btn link" type="button" data-ed="${a.id}">Editar</button><button class="btn link" type="button" data-del="${a.id}">Borrar</button></div></div>`).join("") : '<p class="empty">Todavía no hay avisos.</p>'}
     </section>`;
     const pb = $("#proy"); if(pb) pb.onclick = async () => {
-      if(enClase.deck){ window.open("presentar.html?c=" + enClase.id, "_blank"); return; }
+      if(enClase.deck){ location.href = "presentar.html?c=" + enClase.id; return; }
       window.open(enClase.presentacion, "_blank", "noopener");
       try{ await F.setDoc(F.doc(db, "publico", "presentacion"), { activa: true, clase: enClase.id, n: enClase.n, url: enClase.presentacion, desde: F.serverTimestamp() }); }
       catch(e){ console.error(e); toast("No se pudo compartir con los estudiantes."); }
@@ -100,31 +112,37 @@ iniciar({ area: "docente", activo: "Inicio", titulo: "Hola, Nicolás", fondo: "i
       if(!confirm("¿Borrar este aviso?")) return;
       try{ await F.deleteDoc(F.doc(db, "avisos", b.dataset.del)); avisos = avisos.filter(a => a.id !== b.dataset.del); draw(); }catch(e){ toast("No se pudo borrar."); }
     });
-    const sv = $("#avS"); if(sv) sv.onclick = guardar;
+    const sv = $("#avS"); if(sv) sv.onclick = () => guardar(null);
+    const pv = $("#avP"); if(pv) pv.onclick = () => { $("#avPF").hidden = false; $("#avF").focus(); };
+    const ps = $("#avPS"); if(ps) ps.onclick = () => { const v = $("#avF").value; if(!v){ toast("Elegí la fecha y la hora."); return; } const t = Date.parse(v + ":00-03:00"); if(t <= Date.now()){ toast("La fecha tiene que ser futura."); return; } guardar(F.Timestamp.fromDate(new Date(t))); };
     const cc = $("#avC"); if(cc) cc.onclick = () => { editando = null; draw(); };
   }
   function form(a){
     return `<div class="edit"><input type="text" id="avT" maxlength="120" placeholder="Texto del aviso" value="${esc(a.titulo || "")}" aria-label="Texto del aviso">
       <input type="url" id="avU" placeholder="Enlace (opcional)" value="${esc(a.url || "")}" aria-label="Enlace">
-      <div class="row"><button class="btn primary small" id="avS" type="button">Publicar</button><button class="btn link" id="avC" type="button">Cancelar</button></div></div>`;
+      <div class="row"><button class="btn primary small" id="avS" type="button">Publicar</button><button class="btn small" id="avP" type="button">Programar</button><button class="btn link" id="avC" type="button">Cancelar</button></div>
+      <div class="row" id="avPF" hidden><label class="l" for="avF" style="margin:0">Publicar el</label><input type="datetime-local" id="avF" style="width:auto" value="${a.desde && programado(a) ? new Date(a.desde.toMillis() - 3 * 3600e3).toISOString().slice(0, 16) : ""}"><button class="btn primary small" id="avPS" type="button">Programar</button></div></div>`;
   }
-  async function guardar(){
+  async function guardar(cuando){
     const titulo = $("#avT").value.trim(), url = $("#avU").value.trim();
     if(!titulo){ toast("Escribí el texto del aviso."); return; }
     if(url && !esUrl(url)){ toast("El enlace tiene que empezar con https://"); return; }
     try{
       if(editando === "nuevo"){
         const orden = avisos.reduce((m, a) => Math.max(m, a.orden || 0), 0) + 1;
-        const r = await F.addDoc(F.collection(db, "avisos"), { titulo, url, orden, creado: F.serverTimestamp() });
-        avisos.push({ id: r.id, titulo, url, orden });
+        const desde = cuando || F.Timestamp.now();
+        const r = await F.addDoc(F.collection(db, "avisos"), { titulo, url, orden, desde, creado: F.serverTimestamp() });
+        avisos.push({ id: r.id, titulo, url, orden, desde });
       }else{
-        await F.updateDoc(F.doc(db, "avisos", editando), { titulo, url });
-        Object.assign(avisos.find(a => a.id === editando), { titulo, url });
+        const cambios = { titulo, url, ...(cuando ? { desde: cuando } : {}) };
+        await F.updateDoc(F.doc(db, "avisos", editando), cambios);
+        Object.assign(avisos.find(a => a.id === editando), cambios);
       }
-      editando = null; toast("Aviso publicado"); draw();
+      editando = null; toast(cuando ? "Aviso programado para el " + fmt(cuando) : "Aviso publicado"); draw();
     }catch(e){ console.error(e); toast("No se pudo guardar."); }
   }
   draw();
+  if(enClase) montarAsistencia($("#asisHost"), { clases, claseId: enClase.id });
   if(enClase) F.onSnapshot(F.doc(db, "publico", "presentacion"), d => { presAct = d.data() || null; if(!editando) draw(); }, () => {});
 });
 </script>
