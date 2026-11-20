@@ -32,7 +32,7 @@ export async function montarAsistencia(host, { clases, claseId }){
   if(!document.getElementById("estiloAsis")){ const st = document.createElement("style"); st.id = "estiloAsis"; st.textContent = ESTILO; document.head.appendChild(st); }
   const $ = s => host.querySelector(s);
 
-  const nombreClase = id => { const c = clases.find(x => x.id === id); return c ? `Clase ${c.n}: ${c.titulo}` : id; };
+  const nombreClase = id => { const c = clases.find(x => x.id === id); return c ? `#${c.n}: ${c.titulo}` : id; };
   let activa = null, presentes = [], rot = null, unsub = null, quedan = SEG;
   let tomadas = {};
   const pa = await F.getDoc(F.doc(db, "publico", "asistencia")); if(pa.exists()) tomadas = pa.data().tomadas || {};

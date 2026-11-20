@@ -113,7 +113,7 @@ iniciar({ area: "docente", activo: "Desafíos", titulo: "Desafíos", fondo: "int
   }
   function claseHTML(e, i){
     const n = e.preguntas.length;
-    return `<details class="u" data-i="${i}"${abiertas.has(i) ? " open" : ""}><summary><span class="num">Clase ${e.c.n}</span><h2>${esc(e.c.titulo)}</h2>
+    return `<details class="u" data-i="${i}"${abiertas.has(i) ? " open" : ""}><summary><span class="num">#${e.c.n}</span><h2>${esc(e.c.titulo)}</h2>
       <span class="pill ${n >= e.dias.length ? "ok" : n ? "na" : "na"}">${n} de ${e.dias.length} preguntas</span><span class="pill ${e.jr.hay ? "ok" : "na"}">${e.jr.hay ? TIPOS[e.jr.tipo].nombre : "Sin juego"}</span></summary>
       <div class="ub">
         <div><h3>Test de lectura</h3><p class="extra" style="margin:-4px 0 12px">Una pregunta por día, del ${esc(corta(e.dias[0]))} al ${esc(corta(e.dias[e.dias.length - 1]))}.</p>

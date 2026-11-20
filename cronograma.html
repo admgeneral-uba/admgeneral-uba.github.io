@@ -33,7 +33,7 @@ iniciar({ area: "estudiantes", activo: "Cronograma", titulo: "Cronograma" }, asy
     const d = aFecha(c.fecha), cls = c.fecha < hoy ? "past" : c === prox ? "next" : "";
     return `<details class="cl fold ${cls}"${c === prox ? ' id="proxima" open' : ""}><summary>
       <div class="d">${d.getDate()}/${d.getMonth() + 1}<small>${DIAS[d.getDay()]} · ${esc(c.modalidad)}</small></div>
-      <div><div class="m"><span class="muted small">Clase ${c.n}${c.unidad ? " · Unidad " + c.unidad : ""}</span>${tomadas[c.id] ? (pres[c.id] ? '<span class="pill ok">Presente</span>' : '<span class="pill bad">Ausente</span>') : ""}</div>
+      <div><div class="m"><span class="muted small">#${c.n}${c.unidad ? " · Unidad " + c.unidad : ""}</span>${tomadas[c.id] ? (pres[c.id] ? '<span class="pill ok">Presente</span>' : '<span class="pill bad">Ausente</span>') : ""}</div>
         <h2>${esc(c.titulo)}</h2></div><span class="chev" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></span></summary>
       ${c.temas ? `<div class="body"><ul>${c.temas.split("\n").filter(Boolean).map(t => `<li>${esc(t)}</li>`).join("")}</ul></div>` : ""}
     </details>`;

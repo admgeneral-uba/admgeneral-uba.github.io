@@ -68,7 +68,7 @@ iniciar({ area: "docente", activo: "Contenidos", titulo: "Contenidos", fondo: "i
       <div class="ub">
         <div><label class="l" for="nom-${u}">Nombre de la unidad</label><input type="text" id="nom-${u}" data-k="nombre" value="${esc(e.nombre)}" maxlength="90"></div>
         <div><h3>Presentaciones</h3>
-          ${e.clases.length ? e.clases.map((c, i) => `<div class="prow"><span class="t">Clase ${c.n} · ${esc(corta(c.fecha))}</span>
+          ${e.clases.length ? e.clases.map((c, i) => `<div class="prow"><span class="t">#${c.n} · ${esc(corta(c.fecha))}</span>
             <select data-p="${i}" aria-label="Presentación de la clase ${c.n}"><option value="">Sin presentación</option>${PRES.map(p => `<option value="${p.id}"${p.id === c.deck ? " selected" : ""}>${esc(p.titulo || p.id)}</option>`).join("")}</select>
             <span data-pill="${i}">${pill(c.deck)}</span>${c.deck ? `<a class="btn small" href="presentar.html?c=${c.id}" target="_blank" rel="noopener">Ver</a>` : ""}</div>`).join("") : '<p class="empty">No hay clases de esta unidad en el cronograma.</p>'}
         </div>

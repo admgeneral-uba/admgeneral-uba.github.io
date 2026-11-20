@@ -24,7 +24,7 @@ iniciar({ area: "estudiantes", activo: "Materiales", titulo: "Presentación" }, 
   if(!c.exists() || !c.data().deck){ main.innerHTML = '<div class="card"><h2>Esta clase no tiene presentación</h2><a class="btn" href="materiales.html">Volver a Materiales</a></div>'; return; }
   const clase = c.data(), deck = clase.deck;
   const p = await F.getDoc(F.doc(db, "presentaciones", deck)); const total = p.exists() ? p.data().n : 0;
-  main.innerHTML = `<div class="card"><h2 style="margin-bottom:14px">Clase ${clase.n}: ${esc(clase.titulo)}</h2>
+  main.innerHTML = `<div class="card"><h2 style="margin-bottom:14px">#${clase.n}: ${esc(clase.titulo)}</h2>
     <div class="visor" id="visor"><img id="img" alt=""></div>
     <div class="ctl"><button class="btn" id="ant" type="button">← Anterior</button><span class="n" id="num"></span><button class="btn" id="sig" type="button">Siguiente →</button><button class="btn" id="pc" type="button">Pantalla completa</button></div></div>
     <div class="row"><a class="btn" href="materiales.html">Volver a Materiales</a></div>`;

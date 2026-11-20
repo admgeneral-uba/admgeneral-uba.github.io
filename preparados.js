@@ -20,7 +20,7 @@ export async function montarPreparados({ tipo, leer, aplicar }){
   const box = document.createElement("div"); box.className = "prepbox";
   box.innerHTML = `<span class="label">Preparados</span><div class="ideas" id="prepList"></div>
     <div class="row" style="gap:8px;margin-top:8px;flex-wrap:wrap"><button class="btn link" id="prepSave" type="button">Guardar para usar en clase</button>
-    <select id="prepClase" aria-label="Clase" style="width:auto">${clases.map(c => `<option value="${c.id}"${prox && c.id === prox.id ? " selected" : ""}>Clase ${c.n} · ${esc(c.titulo)}</option>`).join("")}</select></div>
+    <select id="prepClase" aria-label="Clase" style="width:auto">${clases.map(c => `<option value="${c.id}"${prox && c.id === prox.id ? " selected" : ""}>#${c.n}: ${esc(c.titulo)}</option>`).join("")}</select></div>
     <p id="prepMsg" style="margin:6px 0 0;min-height:1.2em;color:var(--ok, #2E7D4F);font-weight:700"></p>`;
   ideas.after(box);
   const st = document.createElement("style");

@@ -83,7 +83,7 @@ iniciar({ area: "estudiantes", activo: "Inicio", titulo: "Inicio" }, async (user
       <div class="card clase">
         ${enClase ? `<h3 class="encl"><span class="dot"></span>En clase ahora: #${enClase.n}: ${esc(enClase.titulo)}</h3><div class="pres" id="pres"></div>`
         : actual ? `<span class="kick">${actual.fecha === hoy ? "Hoy" : "Próxima clase"}</span>
-          <h3>Clase ${actual.n}: ${esc(actual.titulo)}</h3>
+          <h3>#${actual.n}: ${esc(actual.titulo)}</h3>
           <div class="muted">${esc(larga(actual.fecha))} · ${esc(actual.modalidad)}${actual.unidad ? " · Unidad " + actual.unidad : ""}</div>
           ${actual.temas ? `<ul>${actual.temas.split("\n").filter(Boolean).map(t => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}
 `
@@ -117,7 +117,8 @@ iniciar({ area: "estudiantes", activo: "Inicio", titulo: "Inicio" }, async (user
       document.getElementById("vivoC").innerHTML = `<div class="card"><h2>Recursos de la clase</h2>${items.length ? `<div class="row">${items.join("")}</div>` : '<p class="empty" style="margin:0">Cuando el profesor active un recurso (asistencia, nube de palabras, quiz…), aparece acá.</p>'}</div>`;
       return;
     }
-    document.getElementById("vivo").innerHTML = items.length ? `<div class="card live" style="border:2px solid var(--live)"><h2><span class="dot"></span>Ahora en clase</h2><div class="row">${items.join("")}</div></div>` : "";
+    // Fuera del horario de clase no se muestran los recursos en vivo.
+    document.getElementById("vivo").innerHTML = "";
   };
   // Presentación que está proyectando el profesor
   if(enClase){

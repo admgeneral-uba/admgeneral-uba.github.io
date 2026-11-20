@@ -61,7 +61,7 @@ iniciar({ area: "docente", activo: "Inicio", titulo: "Hola, Nicolás", fondo: "i
   const panelClase = c => {
     const compartiendo = presAct && presAct.activa && presAct.clase === c.id;
     return `<div class="card clasehoy"><span class="kick"><span class="dot"></span>Clase de hoy</span>
-      <h3>Clase ${c.n}: ${esc(c.titulo)}</h3><div class="muted">${esc(larga(c.fecha))} · ${esc(c.modalidad)}${c.unidad ? " · Unidad " + c.unidad : ""}</div>
+      <h3>#${c.n}: ${esc(c.titulo)}</h3><div class="muted">${esc(larga(c.fecha))} · ${esc(c.modalidad)}${c.unidad ? " · Unidad " + c.unidad : ""}</div>
       <div class="acc">${c.deck || esUrl(c.presentacion)
         ? `<button class="btn primary grande" id="proy" type="button">Proyectar presentación</button>`
         : `<span class="sinpres">Todavía no cargaste la presentación de esta clase. <a href="docente-contenidos.html">Cargarla en Contenidos</a></span>`}
@@ -83,7 +83,7 @@ iniciar({ area: "docente", activo: "Inicio", titulo: "Hola, Nicolás", fondo: "i
   function draw(){
     $("#zA").innerHTML = `
     ${enClase ? panelClase(enClase) : prox ? `<div class="card next"><span class="kick">${prox.fecha === hoy ? "Hoy" : "Próxima clase"}</span>
-      <h3>Clase ${prox.n}: ${esc(prox.titulo)}</h3><div class="muted">${esc(larga(prox.fecha))} · ${esc(prox.modalidad)}${prox.unidad ? " · Unidad " + prox.unidad : ""}</div>
+      <h3>#${prox.n}: ${esc(prox.titulo)}</h3><div class="muted">${esc(larga(prox.fecha))} · ${esc(prox.modalidad)}${prox.unidad ? " · Unidad " + prox.unidad : ""}</div>
       ${prox.temas ? `<ul>${prox.temas.split("\n").filter(Boolean).map(t => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}
       <div class="row" style="margin-top:16px"><a class="btn" href="recursos.html">Recursos para la clase</a>${esUrl(prox.presentacion) ? `<a class="btn" href="${esc(prox.presentacion)}" target="_blank" rel="noopener">Presentación</a>` : ""}</div></div>` : ""}
 `;
