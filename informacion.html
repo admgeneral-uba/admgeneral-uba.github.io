@@ -12,7 +12,7 @@
 .ess{min-width:0;border:2px solid var(--live)}
 .ess .g{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,230px),1fr));gap:16px 20px}
 .ess .g>div{display:flex;gap:12px}
-.ess .k{font-family:var(--serif);font-size:24px;font-weight:700;color:var(--live);line-height:1.1;min-width:62px}
+.ess .k{font-family:var(--serif);font-size:24px;font-weight:700;color:var(--live);line-height:1.1;min-width:78px;white-space:nowrap}
 .ess .g p{margin:0;color:var(--text);font-size:16px}
 .esc{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
 .esc div{flex:1 1 80px;border-radius:10px;padding:8px 10px}
@@ -55,12 +55,12 @@ import { iniciar, db, F, esc, esUrl } from "./app.js";
 const DOCS = [["normas", "Normas del curso"], ["programa", "Programa de la cátedra"]];
 const FAQ = [
   ["¿Cuándo debería leer la bibliografía?", "Antes de cada clase. En el cronograma figura qué lectura corresponde a cada encuentro. Las dinámicas de clase se aprovechan mejor habiendo leído la bibliografía previamente."],
-  ["¿Qué pasa si no llego al 75 % de asistencia?", "Quedás en condición de “ausente” en la materia. Esto vale tanto para las clases presenciales como para las virtuales."],
-  ["¿Puedo usar el recuperatorio para mejorar una nota?", "Sí. El recuperatorio sirve para rendir un parcial desaprobado o uno cuya nota quieras mejorar. Tené en cuenta que su nota reemplaza siempre a la del parcial, aunque sea más baja."],
+  ["¿Qué pasa si no llego al 75 % de asistencia?", "Quedás en condición de “ausente” en la materia. Esto vale tanto para las clases presenciales como para las virtuales. Si la ausencia está justificada, se deberá presentar el documento correspondiente."],
   ["¿Cómo se aprueban los trabajos prácticos?", "Son grupales y tienen dos partes: una entrega escrita y una exposición oral (o una presentación a través de un formato audiovisual). Se califican como aprobados o reprobados. Para aprobarlos tenemos en cuenta que se entreguen en fecha, que se relacionen con la bibliografía, el formato, la redacción y la ortografía, la profundidad del análisis y la calidad de las conclusiones. Si hay que recuperarlo, se vuelve a entregar en la fecha indicada y valoramos cuánto se tuvieron en cuenta los comentarios de los docentes."],
   ["¿Puedo realizar un trabajo grupal en forma individual?", "No. Los trabajos que se indican como grupales están diseñados para desarrollar el trabajo en equipo. El curso propone que interactúen entre ustedes, y van a tener tiempo en clase para formar los equipos. Si no se cumple este requisito, el trabajo práctico se entrega en la instancia de recuperatorio."],
+  ["¿Puedo usar el recuperatorio para mejorar una nota?", "Sí. El recuperatorio sirve para rendir un parcial desaprobado o uno cuya nota quieras mejorar. Tené en cuenta que su nota reemplaza siempre a la del parcial, aunque sea más baja."],
   ["¿Qué nota necesito para promocionar?", "Con 7 o más promocionás. El promedio se redondea para arriba: si entre los dos parciales sumás 13 puntos, el 6,5 pasa a 7 y promocionás. Con 4 a 6 quedás regular y rendís un examen final. En todos los casos necesitás el 75 % de asistencia y aprobar ambos parciales."],
-  ["¿Puedo sumar puntos por mi compromiso con la cursada?", "Además de los parciales, tenemos en cuenta cómo transitaste la cursada: la asistencia a clase, la participación en las consignas y los trabajos que se destaquen. Demostrar un rendimiento destacado sostenido durante todo el cuatrimestre puede mejorar un poco tu nota final, o permitirte aprobar en los casos que queden cerca de la promoción (12 puntos entre ambos parciales)."],
+  ["¿Puedo sumar puntos por mi compromiso con la cursada?", "Además de los parciales, tenemos en cuenta cómo transitaste el curso: la asistencia a clase, la participación en las consignas y los trabajos sobresalientes. Demostrar un rendimiento destacado sostenido durante todo el cuatrimestre puede mejorar un poco tu nota final, o permitirte aprobar en los casos que queden cerca de la promoción (12 puntos entre ambos parciales)."],
   ["¿Qué es la clase de “entrega de reconocimientos”?", "Es la última clase del cuatrimestre. Nos gusta reconocer a quienes se destacaron durante la cursada: entre todos votamos a compañeras y compañeros en distintas categorías, y los ganadores reciben un premio. Es una forma de cerrar la materia celebrando lo que aprendimos juntos."],
   ["¿Cómo me comunico con el docente?", "Podés enviar un correo a <a href=\"mailto:nicolas.alvarez@economicas.uba.ar\">nicolas.alvarez@economicas.uba.ar</a>."]
 ];
@@ -80,7 +80,7 @@ iniciar({ area: "estudiantes", activo: "Información", titulo: "Información del
         <div><span class="k">75 %</span><span><b>Asistencia mínima</b><p>En clases (presenciales y virtuales).</p></span></div>
         <div><span class="k">2</span><span><b>Parciales</b><p>Unidades I-IV y V-VIII. Se evalúan conceptos con preguntas de opción múltiple.</p></span></div>
         <div><span class="k">1</span><span><b>Recuperatorio</b><p>Su nota siempre reemplaza a la del parcial.</p></span></div>
-        <div><span class="k">TP</span><span><b>Trabajos prácticos grupales</b><p>Entrega escrita y exposición oral.</p></span></div>
+        <div><span class="k">2 TPs</span><span><b>Trabajos prácticos grupales</b><p>Entrega escrita y exposición oral.</p></span></div>
       </div>
       <div class="esc"><div style="background:var(--ok-bg)"><b style="color:var(--ok)">7 a 10</b>Promoción</div><div style="background:var(--soft)"><b>4 a 6</b>Final</div><div style="background:var(--bad-bg)"><b style="color:var(--bad)">0 a 3</b>Insuficiente</div></div>
     </section>

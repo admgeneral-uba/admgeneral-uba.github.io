@@ -100,11 +100,6 @@ iniciar({ area: "estudiantes", activo: "Perfil", titulo: "Perfil", fondo: "rosa"
       form: () => `<div class="fg">${chips("trabaja", ["Sí", "No"], "¿Trabajás? *")}<div id="siTrab" style="display:contents">${P.trabaja === "Sí" ? `${inp("org", "¿En qué organización?", P.org)}${inp("cargo", "¿Cuál es tu cargo?", P.cargo)}${chips("antig", ANTIG, "¿Hace cuánto tiempo?")}` : ""}</div></div>`,
       leer: () => P.trabaja === "Sí" ? { trabaja: "Sí", org: $("#org").value.trim(), cargo: $("#cargo").value.trim(), antig: P.antig || "" } : { trabaja: P.trabaja || "", org: "", cargo: "", antig: "" },
       ok: d => d.trabaja ? "" : "Contanos si trabajás." },
-    b4: { t: "¿Qué tan de acuerdo estás?",
-      ver: () => `<div>${FRASES.map((f, i) => `<div class="lk"><span>${esc(f)}</span><b>${P.likert[i] ? P.likert[i] + " · " + LK[P.likert[i] - 1] : "—"}</b></div>`).join("")}</div>`,
-      form: () => `<div>${FRASES.map((f, i) => `<div class="lk"><span>${esc(f)}</span><div class="n" role="group" aria-label="${esc(f)}">${[1, 2, 3, 4, 5].map(n => `<button type="button" data-lk="${i}" data-n="${n}" aria-pressed="${P.likert[i] === n}" aria-label="${n}: ${LK[n - 1]}" title="${LK[n - 1]}">${n}</button>`).join("")}</div></div>`).join("")}</div>`,
-      leer: () => ({ likert: { ...P.likert } }),
-      ok: d => Object.keys(d.likert).length === FRASES.length ? "" : "Respondé todas las frases." },
     b5: { t: "Para conocerte mejor",
       ver: () => ver([["Máxima aspiración como profesional", P.aspiracion], ["Película o serie favorita", P.pelicula], ["Hobby o actividad predilecta", P.hobby], ["Artista o banda", P.musica], ["Equipo de fútbol", P.futbol]]),
       form: () => `<div class="fg">${area("aspiracion", "¿Cuál es tu máxima aspiración como profesional?", P.aspiracion)}${inp("pelicula", "¿Tu película o serie favorita?", P.pelicula)}${inp("hobby", "¿Tenés algún hobby o actividad predilecta?", P.hobby)}${inp("musica", "¿Algún artista o banda que te guste mucho?", P.musica)}${inp("futbol", "¿De qué equipo de fútbol sos hincha?", P.futbol)}</div>`,
@@ -114,14 +109,15 @@ iniciar({ area: "estudiantes", activo: "Perfil", titulo: "Perfil", fondo: "rosa"
 
   function bloque(k){
     const b = B[k], hecho = !!P.bloques[k], ed = !hecho || editando[k], op = b.fijo || abierto[k];
-    return `<section class="card" id="${k}"><div class="bh"><h2>${b.t}</h2><div class="r">
+    const cab = !b.fijo ? ` data-tg="${k}" style="cursor:pointer"` : "";
+    return `<section class="card" id="${k}"><div class="bh"><h2${cab}>${b.t}</h2><div class="r">
       ${hecho && !ed && op ? `<button class="btn small" type="button" data-ed="${k}">Editar</button>` : ""}
       <span class="st${hecho ? " ok" : ""}">${hecho ? "Hecho" : "Pendiente"}</span>
-      ${hecho && !ed && !b.fijo ? `<button class="chev" type="button" data-tg="${k}" aria-expanded="${!!op}" aria-label="${op ? "Ocultar" : "Mostrar"}">${CHEV}</button>` : ""}</div></div>
-      ${ed ? `<div class="bb">${b.form()}<p class="err" style="color:var(--bad);margin:10px 0 0" role="alert"></p><div class="foot"><button class="btn primary" type="button" data-sv="${k}">Guardar</button></div></div>` : op ? `<div class="bb">${b.ver()}</div>` : ""}</section>`;
+      ${!b.fijo ? `<button class="chev" type="button" data-tg="${k}" aria-expanded="${!!op}" aria-label="${op ? "Ocultar" : "Mostrar"}">${CHEV}</button>` : ""}</div></div>
+      ${!op ? "" : ed ? `<div class="bb">${b.form()}<p class="err" style="color:var(--bad);margin:10px 0 0" role="alert"></p><div class="foot"><button class="btn primary" type="button" data-sv="${k}">Guardar</button></div></div>` : op ? `<div class="bb">${b.ver()}</div>` : ""}</section>`;
   }
   function draw(){
-    main.innerHTML = `<div class="top2">${recorrido}${bloque("b1")}</div>${["b2", "b3", "b4", "b5"].map(bloque).join("")}
+    main.innerHTML = `<div class="top2">${recorrido}${bloque("b1")}</div>${["b2", "b3", "b5"].map(bloque).join("")}
       <div class="row" style="justify-content:flex-end"><button class="btn link" id="out" type="button">Salir de la cuenta</button></div>`;
     $("#out").onclick = salir;
     main.querySelectorAll("[data-ed]").forEach(b => b.onclick = () => { editando[b.dataset.ed] = true; draw(); });
@@ -167,7 +163,9 @@ iniciar({ area: "estudiantes", activo: "Perfil", titulo: "Perfil", fondo: "rosa"
       }; img.onerror = no; img.src = URL.createObjectURL(file);
     });
   }
+  const h = location.hash.slice(1); if(B[h]) abierto[h] = true;
   draw();
+  if(B[h]) document.getElementById(h).scrollIntoView({ block: "start" });
 });
 </script>
 </body>

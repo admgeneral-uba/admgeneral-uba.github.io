@@ -40,7 +40,7 @@ iniciar({ area: "docente", activo: "Estudiantes", titulo: "Estudiantes", fondo: 
     const n = tom.filter(c => pres[d.id] && pres[d.id].has(c.id)).length;
     return { uid: d.id, p, email: x.email || "", nombre: [p.nombre, p.apellido].filter(Boolean).join(" ") || x.nombreGoogle || x.email || "Sin nombre",
       orden: (p.apellido || "") + " " + (p.nombre || x.nombreGoogle || ""), pres: n, pct: tom.length ? Math.round(n / tom.length * 100) : null,
-      vistos: Object.values(x.vistos || {}).filter(Boolean).length, des: des[d.id] || 0, completo: ["b1", "b2", "b3", "b4", "b5"].every(k => b[k]), nota: notas[d.id] || {} };
+      vistos: Object.values(x.vistos || {}).filter(Boolean).length, des: des[d.id] || 0, completo: ["b1", "b2", "b3", "b5"].every(k => b[k]), nota: notas[d.id] || {} };
   }).sort((a, b) => a.orden.localeCompare(b.orden, "es"));
   const f = { riesgo: false, perfil: false, trabaja: false }; let q = "";
 
