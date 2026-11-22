@@ -52,6 +52,7 @@
 import { iniciar, db, F, esc, toast, $, leerClases, leerMiDoc, leerTomadas, misPresentes, misDesafios, salir } from "./app.js";
 
 const CARRERAS = ["Contador Público", "Lic. en Administración", "Lic. en Economía", "Lic. en Sistemas de Información", "Actuario"];
+const LUGARES = ["CABA", "Prov. de Buenos Aires", "Interior del país", "Fuera de Argentina"];
 const ANTIG = ["Menos de 6 meses", "6 meses a 1 año", "1 a 3 años", "Más de 3 años"];
 const FRASES = ["Aspiro a tener un rol de alta jerarquía en una organización.", "Lo que más me interesa es ganar dinero.", "Los profesionales de las Ciencias Económicas debemos garantizar que las organizaciones tengan un impacto social positivo.", "Los profesionales de las Ciencias Económicas tenemos responsabilidad por el impacto ambiental de las organizaciones.", "Considero que tengo excelentes habilidades de liderazgo.", "Me gusta socializar y vincularme con otras personas.", "Me siento cómodo/a si tengo que hablar en público (por ejemplo, pasar al frente en el aula)."];
 const LK = ["Nada de acuerdo", "Poco de acuerdo", "Ni de acuerdo ni en desacuerdo", "Bastante de acuerdo", "Totalmente de acuerdo"];
@@ -85,10 +86,10 @@ iniciar({ area: "estudiantes", activo: "Perfil", titulo: "Perfil", fondo: "rosa"
 
   const B = {
     b1: { t: "Datos personales", fijo: true,
-      ver: () => `<div class="foto">${avatar()}</div>` + ver([["Apellido", P.apellido], ["Nombre", P.nombre], ["Cómo me llaman", P.apodo], ["Legajo", P.legajo], ["Fecha de nacimiento", fecha(P.nacimiento)], ["Lugar de nacimiento", P.lugar]]),
+      ver: () => `<div class="foto">${avatar()}</div>` + ver([["Apellido", P.apellido], ["Nombre", P.nombre], ["Legajo", P.legajo]]),
       form: () => `<div class="foto">${avatar()}<label class="btn small" for="foto">Cambiar foto</label><input id="foto" type="file" accept="image/*" hidden></div>
-        <div class="fg">${inp("apellido", "Apellido *", P.apellido)}${inp("nombre", "Nombre *", P.nombre)}${inp("apodo", "¿Cómo preferís que te llamemos?", P.apodo)}${inp("legajo", "Legajo *", P.legajo)}${inp("nacimiento", "Fecha de nacimiento", P.nacimiento, "date")}${inp("lugar", "¿Dónde naciste?", P.lugar)}</div>`,
-      leer: () => ({ apellido: $("#apellido").value.trim(), nombre: $("#nombre").value.trim(), apodo: $("#apodo").value.trim(), legajo: $("#legajo").value.trim().replace(/[^0-9A-Za-z-]/g, ""), nacimiento: $("#nacimiento").value, lugar: $("#lugar").value.trim() }),
+        <div class="fg">${inp("apellido", "Apellido *", P.apellido)}${inp("nombre", "Nombre *", P.nombre)}${inp("legajo", "Legajo *", P.legajo)}</div>`,
+      leer: () => ({ apellido: $("#apellido").value.trim(), nombre: $("#nombre").value.trim(), legajo: $("#legajo").value.trim().replace(/[^0-9A-Za-z-]/g, "") }),
       ok: d => d.apellido && d.nombre && d.legajo ? "" : "Completá apellido, nombre y legajo." },
     b2: { t: "Perfil académico",
       ver: () => ver([["Carrera", P.carrera], ["Materias aprobadas", P.aprobadas], ["Otras materias este cuatrimestre", P.otras], ["Por qué estudio esta carrera", P.porque]]),
@@ -101,9 +102,9 @@ iniciar({ area: "estudiantes", activo: "Perfil", titulo: "Perfil", fondo: "rosa"
       leer: () => P.trabaja === "Sí" ? { trabaja: "Sí", org: $("#org").value.trim(), cargo: $("#cargo").value.trim(), antig: P.antig || "" } : { trabaja: P.trabaja || "", org: "", cargo: "", antig: "" },
       ok: d => d.trabaja ? "" : "Contanos si trabajás." },
     b5: { t: "Para conocerte mejor",
-      ver: () => ver([["Máxima aspiración como profesional", P.aspiracion], ["Película o serie favorita", P.pelicula], ["Hobby o actividad predilecta", P.hobby], ["Artista o banda", P.musica], ["Equipo de fútbol", P.futbol]]),
-      form: () => `<div class="fg">${area("aspiracion", "¿Cuál es tu máxima aspiración como profesional?", P.aspiracion)}${inp("pelicula", "¿Tu película o serie favorita?", P.pelicula)}${inp("hobby", "¿Tenés algún hobby o actividad predilecta?", P.hobby)}${inp("musica", "¿Algún artista o banda que te guste mucho?", P.musica)}${inp("futbol", "¿De qué equipo de fútbol sos hincha?", P.futbol)}</div>`,
-      leer: () => ({ aspiracion: $("#aspiracion").value.trim(), pelicula: $("#pelicula").value.trim(), hobby: $("#hobby").value.trim(), musica: $("#musica").value.trim(), futbol: $("#futbol").value.trim() }),
+      ver: () => ver([["Fecha de nacimiento", fecha(P.nacimiento)], ["Dónde nací", P.lugar], ["Apodo", P.apodo], ["Máxima aspiración como profesional", P.aspiracion], ["Película o serie favorita", P.pelicula], ["Hobby o actividad predilecta", P.hobby], ["Artista o banda", P.musica], ["Equipo de fútbol", P.futbol]]),
+      form: () => `<div class="fg">${inp("nacimiento", "Fecha de nacimiento", P.nacimiento, "date")}${chips("lugar", LUGARES, "¿Dónde naciste?")}${inp("apodo", "¿Tenés algún apodo?", P.apodo)}${area("aspiracion", "¿Cuál es tu máxima aspiración como profesional?", P.aspiracion)}${inp("pelicula", "¿Tu película o serie favorita?", P.pelicula)}${inp("hobby", "¿Tenés algún hobby o actividad predilecta?", P.hobby)}${inp("musica", "¿Algún artista o banda que te guste mucho?", P.musica)}${inp("futbol", "¿De qué equipo de fútbol sos hincha?", P.futbol)}</div>`,
+      leer: () => ({ nacimiento: $("#nacimiento").value, lugar: P.lugar || "", apodo: $("#apodo").value.trim(), aspiracion: $("#aspiracion").value.trim(), pelicula: $("#pelicula").value.trim(), hobby: $("#hobby").value.trim(), musica: $("#musica").value.trim(), futbol: $("#futbol").value.trim() }),
       ok: () => "" }
   };
 

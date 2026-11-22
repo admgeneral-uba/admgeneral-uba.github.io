@@ -23,14 +23,14 @@
 .val .v{display:flex;gap:14px;padding:16px 0}
 .val .v+.v{border-top:1px solid rgba(90,60,20,.22)}
 .val .n{font-family:var(--serif);font-size:22px;font-weight:700;color:var(--live-ink);min-width:34px;line-height:1.2}
-.val h3{margin:0 0 6px;font-size:22px;line-height:1.25}
+.val h3{margin:0 0 6px;font-size:22px;line-height:1.25;font-family:var(--sans);font-weight:700}
 .val p b{color:#3B2A12}
 .val .v>span{flex:1;min-width:0}
 .val .fila{display:flex;align-items:center;gap:24px}
 .val .fila p{flex:1;min-width:0}
 .val .fila img{flex:none;height:78px;width:96px;object-fit:contain}
-.val .fila img.valor-protagonistas{height:90px}
-@media (max-width:560px){.val .fila img{height:56px;width:64px}.val .fila img.valor-protagonistas{height:64px}.val .fila{gap:14px}}
+.val .fila img.valor-protagonistas,.val .fila img.valor-lider{height:90px}
+@media (max-width:560px){.val .fila img{height:56px;width:64px}.val .fila img.valor-protagonistas,.val .fila img.valor-lider{height:64px}.val .fila{gap:14px}}
 .val p{margin:0;color:#4A3818;font-size:17.5px;line-height:1.55}
 .val h2,.val h3{color:#3B2A12}
 .docs{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,460px),1fr));gap:12px}
