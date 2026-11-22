@@ -21,13 +21,17 @@
 .cl .m{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:4px}
 @media (max-width:640px){.cl>summary{grid-template-columns:96px minmax(0,1fr) auto;gap:10px}.cl .d{font-size:18px}.cl .body{padding-left:0}}
 .volver{margin-top:4px}
+.cl .lt{margin:14px 0 0;font-size:17px}
+.cl ul a{color:var(--link)}
 </style>
 </head>
 <body>
 <script type="module">
-import { iniciar, esc, leerClases, leerTomadas, misPresentes, hoyISO, aFecha, DIAS } from "./app.js";
+import { iniciar, esc, esUrl, leerClases, leerUnidades, leerTomadas, misPresentes, hoyISO, aFecha, DIAS } from "./app.js";
 iniciar({ area: "estudiantes", activo: "Cronograma", titulo: "Cronograma" }, async (user, main) => {
-  const [clases, tomadas, pres] = await Promise.all([leerClases(), leerTomadas(), misPresentes(user.uid)]), hoy = hoyISO();
+  const [clases, unidades, tomadas, pres] = await Promise.all([leerClases(), leerUnidades(), leerTomadas(), misPresentes(user.uid)]), hoy = hoyISO();
+  const lecturasDe = c => (c.lecturas || []).map(r => ((unidades[r.u] || {}).lecturas || [])[r.i]).filter(Boolean);
+  const lectura = l => esUrl(l.url) ? `<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.cita)}</a>` : esc(l.cita);
   if(!clases.length){ main.innerHTML = '<div class="card"><p class="empty">Todavía no está cargado el cronograma.</p></div>'; return; }
   const prox = clases.find(c => c.fecha >= hoy);
   main.innerHTML = `<div class="list">${clases.map(c => {
@@ -36,7 +40,7 @@ iniciar({ area: "estudiantes", activo: "Cronograma", titulo: "Cronograma" }, asy
       <div class="d"><span class="dia">${DIAS[d.getDay()].charAt(0).toUpperCase() + DIAS[d.getDay()].slice(1)}</span>${d.getDate()}/${d.getMonth() + 1}<small>${esc(c.modalidad)}</small></div>
       <div><div class="m"><span class="muted small">#${c.n}${c.unidad ? " · Unidad " + c.unidad : ""}</span>${tomadas[c.id] ? (pres[c.id] ? '<span class="pill ok">Presente</span>' : '<span class="pill bad">Ausente</span>') : ""}</div>
         <h2>${esc(c.titulo)}</h2></div><span class="chev" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></span></summary>
-      ${c.temas ? `<div class="body"><ul>${c.temas.split("\n").filter(Boolean).map(t => `<li>${esc(t)}</li>`).join("")}</ul></div>` : ""}
+      ${(() => { const ls = lecturasDe(c); return c.temas || ls.length ? `<div class="body">${c.temas ? `<ul>${c.temas.split("\n").filter(Boolean).map(t => `<li>${esc(t)}</li>`).join("")}</ul>` : ""}${ls.length ? `<h3 class="lt">Lecturas</h3><ul>${ls.map(l => `<li>${lectura(l)}</li>`).join("")}</ul>` : ""}</div>` : ""; })()}
     </details>`;
   }).join("")}</div>
   <div class="row volver"><a class="btn" href="index.html">Volver al inicio</a></div>`;

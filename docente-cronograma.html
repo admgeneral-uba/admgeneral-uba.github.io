@@ -97,7 +97,7 @@ iniciar({ area: "docente", activo: "Cronograma", titulo: "Cronograma", fondo: "i
       rows.forEach(r => {
         const id = r.id || "c" + String(r.n).padStart(2, "0") + "-" + Math.random().toString(36).slice(2, 6);
         r.id = id; usados.add(id);
-        b.set(F.doc(db, "clases", id), { n: r.n, fecha: r.fecha, modalidad: r.modalidad || "Presencial", unidad: r.unidad || "", titulo: (r.titulo || "").trim(), temas: (r.temas || "").trim(), ...(r.presentacion ? { presentacion: r.presentacion } : {}) });
+        b.set(F.doc(db, "clases", id), { n: r.n, fecha: r.fecha, modalidad: r.modalidad || "Presencial", unidad: r.unidad || "", titulo: (r.titulo || "").trim(), temas: (r.temas || "").trim(), ...(r.presentacion ? { presentacion: r.presentacion } : {}) }, { merge: true });
       });
       await b.commit();
       borrar = new Set(); dirty = false; toast("Cronograma guardado"); draw();
