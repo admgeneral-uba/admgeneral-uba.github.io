@@ -23,6 +23,7 @@ td{padding:9px 8px;border-bottom:1px solid var(--line2);vertical-align:middle}
 .nums div{background:var(--soft);border-radius:12px;padding:14px 16px}
 .nums b{font-family:var(--serif);font-size:34px;line-height:1;display:block;margin-bottom:4px}
 td input.nota{width:62px;padding:6px 8px;text-align:center}
+td select.nota{width:auto;padding:6px 8px}
 </style>
 </head>
 <body>
@@ -64,16 +65,17 @@ iniciar({ area: "docente", activo: "Estudiantes", titulo: "Estudiantes", fondo: 
   function draw(){
     const R = L.filter(s => (!f.riesgo || (s.pct !== null && s.pct < 75)) && (!f.perfil || !s.completo) && (!f.trabaja || s.p.trabaja === "Sí")
       && (!q || (s.nombre + " " + (s.p.legajo || "") + " " + s.email).toLowerCase().includes(q)));
-    $("#tabla").innerHTML = L.length ? `<table><tr><th>Estudiante</th><th>DNI</th><th>Carrera</th><th>Trabaja</th><th>Asistencia</th><th>Desafíos</th><th>Contenidos vistos</th><th>Perfil</th><th>1.° parcial</th><th>2.° parcial</th></tr>
+    $("#tabla").innerHTML = L.length ? `<table><tr><th>Estudiante</th><th>DNI</th><th>Carrera</th><th>Trabaja</th><th>Asistencia</th><th>Desafíos</th><th>Contenidos vistos</th><th>Perfil</th><th>1° parcial</th><th>2° parcial</th><th>TP N° 1</th><th>TP N° 2</th></tr>
       ${R.map(s => `<tr><td><div class="who">${s.p.foto ? `<img src="${s.p.foto}" alt="">` : `<span class="ini">${esc((s.nombre[0] || "?").toUpperCase())}</span>`}<span><b>${esc(s.nombre)}</b>${s.p.apodo ? `<br><small>${esc(s.p.apodo)}</small>` : ""}</span></div></td>
         <td>${esc(s.p.legajo || "—")}</td><td>${esc(s.p.carrera || "—")}</td><td>${esc(s.p.trabaja || "—")}</td>
         <td>${s.pct === null ? "—" : pill(s.pct >= 75 ? true : false, s.pct + " %")}</td><td>${s.des}</td><td>${s.vistos}</td><td>${pill(s.completo ? true : null, s.completo ? "Completo" : "Incompleto")}</td>
-        <td><input class="nota" type="text" inputmode="decimal" data-u="${s.uid}" data-k="parcial1" value="${esc(s.nota.parcial1 ?? "")}" aria-label="Nota del 1.° parcial de ${esc(s.nombre)}"></td>
-        <td><input class="nota" type="text" inputmode="decimal" data-u="${s.uid}" data-k="parcial2" value="${esc(s.nota.parcial2 ?? "")}" aria-label="Nota del 2.° parcial de ${esc(s.nombre)}"></td></tr>`).join("")}</table>` : '<p class="empty">Todavía no ingresó ningún estudiante.</p>';
+        <td><input class="nota" type="text" inputmode="decimal" data-u="${s.uid}" data-k="parcial1" value="${esc(s.nota.parcial1 ?? "")}" aria-label="Nota del 1° parcial de ${esc(s.nombre)}"></td>
+        <td><input class="nota" type="text" inputmode="decimal" data-u="${s.uid}" data-k="parcial2" value="${esc(s.nota.parcial2 ?? "")}" aria-label="Nota del 2° parcial de ${esc(s.nombre)}"></td>
+        ${["tp1", "tp2"].map((k, j) => `<td><select class="nota tp" data-u="${s.uid}" data-k="${k}" aria-label="TP N° ${j + 1} de ${esc(s.nombre)}">${["", "Aprobado", "Reprobado"].map(o => `<option value="${o}"${(s.nota[k] || "") === o ? " selected" : ""}>${o || "—"}</option>`).join("")}</select></td>`).join("")}</tr>`).join("")}</table>` : '<p class="empty">Todavía no ingresó ningún estudiante.</p>';
     $("#cnt").textContent = L.length ? `${R.length} de ${L.length} estudiantes` : "";
-    $("#tabla").querySelectorAll("input.nota").forEach(i => i.onchange = async () => {
+    $("#tabla").querySelectorAll(".nota").forEach(i => i.onchange = async () => {
       const v = i.value.trim().replace(",", ".");
-      if(v && !(/^\d{1,2}(\.\d{1,2})?$/.test(v) && +v <= 10)){ toast("La nota tiene que ser un número del 0 al 10."); return; }
+      if(i.tagName === "INPUT" && v && !(/^\d{1,2}(\.\d{1,2})?$/.test(v) && +v <= 10)){ toast("La nota tiene que ser un número del 0 al 10."); return; }
       const s = L.find(x => x.uid === i.dataset.u);
       try{ s.nota[i.dataset.k] = v; await F.setDoc(F.doc(db, "notas", s.uid), { [i.dataset.k]: v }, { merge: true }); toast("Nota guardada"); }
       catch(e){ console.error(e); toast("No se pudo guardar la nota."); }

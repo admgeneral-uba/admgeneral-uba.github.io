@@ -29,6 +29,8 @@
 .chev[aria-expanded="true"] svg{transform:rotate(180deg)}
 .bb{margin-top:16px}
 .fg{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:14px 18px}
+.fg.dos{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (max-width:640px){.fg.dos{grid-template-columns:1fr}}
 .vw{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,220px),1fr));gap:12px 18px}
 .vw span{display:block;font-size:14px;color:var(--muted)}
 .vw b{font-weight:400}
@@ -71,10 +73,11 @@ iniciar({ area: "estudiantes", activo: "Perfil", titulo: "Perfil", fondo: "rosa"
   const tom = clases.filter(c => tomadas[c.id]), np = tom.filter(c => pres[c.id]).length;
   const pct = tom.length ? Math.round(np / tom.length * 100) : null;
   const nota = v => v === undefined || v === null || v === "" ? '<span class="pill na">Aún no disponible</span>' : `<b>${esc(v)}</b>`;
+  const notaTP = v => v === "Aprobado" ? '<span class="pill ok">Aprobado</span>' : v === "Reprobado" ? '<span class="pill bad">Reprobado</span>' : nota(v);
   const recorrido = `<section class="card"><h2>Mi recorrido</h2>
     <div class="stats"><div><b>${pct === null ? "—" : pct + " %"}</b><span>Asistencia${tom.length ? ` (${np} de ${tom.length})` : ""}</span></div><div><b>${nDes}</b><span>Desafíos completados</span></div><div><b>${vistos}</b><span>Contenidos vistos</span></div></div>
     <div class="dots">${clases.map(c => `<span class="${tomadas[c.id] ? (pres[c.id] ? "p" : "a") : ""}" title="Clase ${c.n}">${c.n}</span>`).join("")}</div>
-    <div class="notas"><div><span>Nota 1.° parcial</span>${nota(notas.parcial1)}</div><div><span>Nota 2.° parcial</span>${nota(notas.parcial2)}</div></div></section>`;
+    <div class="notas"><div><span>Nota 1° parcial</span>${nota(notas.parcial1)}</div><div><span>Nota 2° parcial</span>${nota(notas.parcial2)}</div><div><span>Nota TP N° 1</span>${notaTP(notas.tp1)}</div><div><span>Nota TP N° 2</span>${notaTP(notas.tp2)}</div></div></section>`;
 
   // ----- bloques -----
   const inp = (id, label, v, t = "text") => `<div><label class="l" for="${id}">${label}</label><input type="${t}" id="${id}" value="${esc(v || "")}"></div>`;
@@ -102,8 +105,8 @@ iniciar({ area: "estudiantes", activo: "Perfil", titulo: "Perfil", fondo: "rosa"
       leer: () => P.trabaja === "Sí" ? { trabaja: "Sí", org: $("#org").value.trim(), cargo: $("#cargo").value.trim(), antig: P.antig || "" } : { trabaja: P.trabaja || "", org: "", cargo: "", antig: "" },
       ok: d => d.trabaja ? "" : "Contanos si trabajás." },
     b5: { t: "Para conocerte mejor",
-      ver: () => ver([["Fecha de nacimiento", fecha(P.nacimiento)], ["Dónde nací", P.lugar], ["Apodo", P.apodo], ["Máxima aspiración como profesional", P.aspiracion], ["Película o serie favorita", P.pelicula], ["Hobby o actividad predilecta", P.hobby], ["Artista o banda", P.musica], ["Equipo de fútbol", P.futbol]]),
-      form: () => `<div class="fg">${inp("nacimiento", "Fecha de nacimiento", P.nacimiento, "date")}${chips("lugar", LUGARES, "¿Dónde naciste?")}${inp("apodo", "¿Tenés algún apodo?", P.apodo)}${area("aspiracion", "¿Cuál es tu máxima aspiración como profesional?", P.aspiracion)}${inp("pelicula", "¿Tu película o serie favorita?", P.pelicula)}${inp("hobby", "¿Tenés algún hobby o actividad predilecta?", P.hobby)}${inp("musica", "¿Algún artista o banda que te guste mucho?", P.musica)}${inp("futbol", "¿De qué equipo de fútbol sos hincha?", P.futbol)}</div>`,
+      ver: () => ver([["Fecha de nacimiento", fecha(P.nacimiento)], ["Apodo", P.apodo], ["Dónde nací", P.lugar], ["Máxima aspiración como profesional", P.aspiracion], ["Película o serie favorita", P.pelicula], ["Hobby o actividad predilecta", P.hobby], ["Artista o banda", P.musica], ["Equipo de fútbol", P.futbol]]),
+      form: () => `<div class="fg dos">${inp("nacimiento", "Fecha de nacimiento", P.nacimiento, "date")}${inp("apodo", "¿Tenés algún apodo?", P.apodo)}${chips("lugar", LUGARES, "¿Dónde naciste?")}${area("aspiracion", "¿Cuál es tu máxima aspiración como profesional?", P.aspiracion)}${inp("pelicula", "¿Tu película o serie favorita?", P.pelicula)}${inp("hobby", "¿Tenés algún hobby o actividad predilecta?", P.hobby)}${inp("musica", "¿Algún artista o banda que te guste mucho?", P.musica)}${inp("futbol", "¿De qué equipo de fútbol sos hincha?", P.futbol)}</div>`,
       leer: () => ({ nacimiento: $("#nacimiento").value, lugar: P.lugar || "", apodo: $("#apodo").value.trim(), aspiracion: $("#aspiracion").value.trim(), pelicula: $("#pelicula").value.trim(), hobby: $("#hobby").value.trim(), musica: $("#musica").value.trim(), futbol: $("#futbol").value.trim() }),
       ok: () => "" }
   };
