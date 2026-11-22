@@ -29,8 +29,10 @@
 .chev[aria-expanded="true"] svg{transform:rotate(180deg)}
 .bb{margin-top:16px}
 .fg{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,260px),1fr));gap:14px 18px}
+span.l{display:block;font-weight:700;font-size:15px;margin:0 0 4px}
 .fg.dos{grid-template-columns:repeat(2,minmax(0,1fr))}
-@media (max-width:640px){.fg.dos{grid-template-columns:1fr}}
+@media (max-width:640px){span.l{display:block;font-weight:700;font-size:15px;margin:0 0 4px}
+.fg.dos{grid-template-columns:1fr}}
 .vw{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,220px),1fr));gap:12px 18px}
 .vw span{display:block;font-size:14px;color:var(--muted)}
 .vw b{font-weight:400}
@@ -96,12 +98,12 @@ iniciar({ area: "estudiantes", activo: "Perfil", titulo: "Perfil", fondo: "rosa"
       ok: d => d.apellido && d.nombre && d.legajo ? "" : "Completá apellido, nombre y DNI." },
     b2: { t: "Perfil académico",
       ver: () => ver([["Carrera", P.carrera], ["Materias aprobadas", P.aprobadas], ["Otras materias este cuatrimestre", P.otras], ["Por qué estudio esta carrera", P.porque]]),
-      form: () => `<div class="fg">${chips("carrera", CARRERAS, "¿Qué carrera estudiás? *")}${area("porque", "¿Por qué estudiás esta carrera?", P.porque)}${inp("aprobadas", "¿Cuántas materias tenés aprobadas?", P.aprobadas, "number")}${inp("otras", "¿Qué otras materias cursás este cuatrimestre?", P.otras)}</div>`,
+      form: () => `<div class="fg dos">${chips("carrera", CARRERAS, "¿Qué carrera estudiás? *")}${area("porque", "¿Por qué estudiás esta carrera?", P.porque)}${inp("aprobadas", "¿Cuántas materias tenés aprobadas?", P.aprobadas, "number")}${inp("otras", "¿Qué otras materias cursás este cuatrimestre?", P.otras)}</div>`,
       leer: () => ({ carrera: P.carrera || "", porque: $("#porque").value.trim(), aprobadas: $("#aprobadas").value, otras: $("#otras").value.trim() }),
       ok: d => d.carrera ? "" : "Elegí tu carrera." },
     b3: { t: "Perfil laboral",
       ver: () => ver(P.trabaja === "Sí" ? [["¿Trabajás?", "Sí"], ["Organización", P.org], ["Cargo", P.cargo], ["Antigüedad", P.antig]] : [["¿Trabajás?", P.trabaja]]),
-      form: () => `<div class="fg">${chips("trabaja", ["Sí", "No"], "¿Trabajás? *")}<div id="siTrab" style="display:contents">${P.trabaja === "Sí" ? `${inp("org", "¿En qué organización?", P.org)}${inp("cargo", "¿Cuál es tu cargo?", P.cargo)}${chips("antig", ANTIG, "¿Hace cuánto tiempo?")}` : ""}</div></div>`,
+      form: () => `<div class="fg dos">${chips("trabaja", ["Sí", "No"], "¿Trabajás? *")}<div id="siTrab" style="display:contents">${P.trabaja === "Sí" ? `${inp("org", "¿En qué organización?", P.org)}${inp("cargo", "¿Cuál es tu cargo?", P.cargo)}${chips("antig", ANTIG, "¿Hace cuánto tiempo?")}` : ""}</div></div>`,
       leer: () => P.trabaja === "Sí" ? { trabaja: "Sí", org: $("#org").value.trim(), cargo: $("#cargo").value.trim(), antig: P.antig || "" } : { trabaja: P.trabaja || "", org: "", cargo: "", antig: "" },
       ok: d => d.trabaja ? "" : "Contanos si trabajás." },
     b5: { t: "Para conocerte mejor",
