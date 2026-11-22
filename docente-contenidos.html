@@ -93,7 +93,7 @@ iniciar({ area: "docente", activo: "Contenidos", titulo: "Contenidos", fondo: "i
       </div></details>`;
   }
 
-  const DOCS = [["normas", "Normas del curso"], ["programa", "Programa de la cátedra"], ["tp1", "Consigna del TP n.° 1"], ["tp2", "Consigna del TP n.° 2"], ["modelo", "Modelo de examen"]];
+  const DOCS = [["normas", "Normas del curso"], ["programa", "Programa de la cátedra"]];
   let docs = {}; try{ const d = await F.getDoc(F.doc(db, "curso", "documentos")); if(d.exists()) docs = d.data(); }catch(e){}
   let docsOpen = false;
   function docsHTML(){

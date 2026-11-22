@@ -7,7 +7,7 @@
 <link rel="icon" href="img/uba.png">
 <link rel="stylesheet" href="sitio.css">
 <style>
-.top2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:22px;align-items:stretch}
+.top2{display:grid;grid-template-columns:minmax(0,35fr) minmax(0,65fr);gap:22px;align-items:stretch}
 @media (max-width:860px){.top2{grid-template-columns:1fr}}
 .ess{min-width:0;border:2px solid var(--live)}
 .ess .g{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,230px),1fr));gap:16px 20px}
@@ -46,11 +46,11 @@ a.doc:hover{border-color:var(--ink)}
 <script type="module">
 import { iniciar, db, F, esc, esUrl } from "./app.js";
 
-const DOCS = [["normas", "Normas del curso"], ["programa", "Programa de la cátedra"], ["tp1", "Consigna del TP n.° 1"], ["tp2", "Consigna del TP n.° 2"], ["modelo", "Modelo de examen"]];
+const DOCS = [["normas", "Normas del curso"], ["programa", "Programa de la cátedra"]];
 const FAQ = [
   ["¿Qué pasa si no llego al 75 % de asistencia?", "Quedás en condición de “ausente” en la materia. Esto vale tanto para las clases presenciales como para las virtuales."],
   ["¿Puedo usar el recuperatorio para mejorar una nota?", "Sí. El recuperatorio sirve para rendir un parcial desaprobado o uno cuya nota quieras mejorar. Tené en cuenta que su nota reemplaza siempre a la del parcial, aunque sea más baja."],
-  ["¿Cómo se aprueban los trabajos prácticos?", "Son grupales y tienen dos partes: una entrega escrita y una exposición oral. Se califican como aprobados o reprobados. Para aprobarlos tenemos en cuenta que se entreguen en fecha, que se relacionen con la bibliografía, el formato, la redacción y la ortografía, la profundidad del análisis y la calidad de las conclusiones. Si hay que recuperarlo, se vuelve a entregar en la fecha indicada y valoramos cuánto se tuvieron en cuenta los comentarios de los docentes."],
+  ["¿Cómo se aprueban los trabajos prácticos?", "Son grupales y tienen dos partes: una entrega escrita y una exposición oral (o una presentación a través de un formato audiovisual). Se califican como aprobados o reprobados. Para aprobarlos tenemos en cuenta que se entreguen en fecha, que se relacionen con la bibliografía, el formato, la redacción y la ortografía, la profundidad del análisis y la calidad de las conclusiones. Si hay que recuperarlo, se vuelve a entregar en la fecha indicada y valoramos cuánto se tuvieron en cuenta los comentarios de los docentes."],
   ["¿Puedo realizar un trabajo grupal en forma individual?", "No. Los trabajos que se indican como grupales están diseñados para desarrollar el trabajo en equipo. El curso propone que interactúen entre ustedes, y van a tener tiempo en clase para formar los equipos. Si no se cumple este requisito, el trabajo práctico se entrega en la instancia de recuperatorio."],
   ["¿Cómo me comunico con el docente?", "Podés enviar un correo a <a href=\"mailto:nicolas.alvarez@economicas.uba.ar\">nicolas.alvarez@economicas.uba.ar</a>."],
   ["¿Cuándo debería leer la bibliografía?", "Antes de cada clase. En el cronograma figura qué lectura corresponde a cada encuentro. Las dinámicas de clase se aprovechan mejor habiendo leído la bibliografía previamente."],
