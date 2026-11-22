@@ -3,8 +3,8 @@
 
 const P = "Presencial", V = "Virtual";
 export const CLASES_BASE = [
-  [1, "2027-04-06", P, "I", "Las organizaciones como sistemas abiertos", "Presentación de la materia, expectativas y normas.\nLas organizaciones como el objeto de estudio de la administración.\nLa organización como sistema abierto: entradas, transformación y salidas."],
-  [2, "2027-04-09", V, "I", "Sistemas, elementos y tipologías", "Conceptos básicos de la teoría de sistemas.\nElementos y tipologías de organizaciones."],
+  [1, "2027-04-06", P, "I", "Bienvenida y primeros conceptos", "Presentación de la materia, expectativas y normas.\nLas organizaciones como el objeto de estudio de la administración."],
+  [2, "2027-04-09", V, "I", "Las organizaciones como sistemas abiertos", "La organización como sistema abierto: entradas, transformación y salidas.\nConceptos básicos de la teoría de sistemas.\nElementos y tipologías de organizaciones."],
   [3, "2027-04-13", P, "II", "Administración, eficiencia y eficacia", "Concepto de administración. Los gerentes y sus niveles.\nEficiencia y eficacia: el uso óptimo de los recursos y el logro de los objetivos.\nLas funciones de la administración: planeación, organización, dirección y control."],
   [4, "2027-04-16", V, "II", "¿Ciencia, tecnología o persuasión?", "La administración como ciencia, tecnología o persuasión.\nLa administración como sociotecnología: objeto, medios y metas."],
   [5, "2027-04-20", P, "III", "Los orígenes de la administración", "Los antecedentes: la revolución industrial y los sistemas de producción.\nEl surgimiento de la enseñanza de la administración: de las escuelas de comercio a Wharton y a la Licenciatura en Administración en la Argentina."],

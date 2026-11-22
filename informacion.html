@@ -17,13 +17,14 @@
 .esc{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
 .esc div{flex:1 1 80px;border-radius:10px;padding:8px 10px}
 .esc b{font-family:var(--serif);font-size:20px;display:block}
-.val{min-width:0;border-radius:16px;padding:22px 30px;background:#EBD3A4 url(img/papiro.jpg) center/cover;box-shadow:inset 0 0 40px rgba(120,80,20,.35);display:flex;flex-direction:column;color:#3B2A12}
+.val{min-width:0;border-radius:16px;padding:22px 30px;background:linear-gradient(rgba(255,255,255,.5),rgba(255,255,255,.5)),url(img/papiro.jpg) center/cover #EBD3A4;box-shadow:inset 0 0 40px rgba(120,80,20,.15);display:flex;flex-direction:column;color:#3B2A12}
 .val h2{margin:0 0 6px;font-size:24px}
 .val .in{margin-top:4px;flex:1;display:flex;flex-direction:column;justify-content:space-evenly}
 .val .v{display:flex;gap:14px;padding:16px 0}
 .val .v+.v{border-top:1px solid rgba(90,60,20,.22)}
 .val .n{font-family:var(--serif);font-size:22px;font-weight:700;color:var(--live-ink);min-width:34px;line-height:1.2}
 .val h3{margin:0 0 6px;font-size:22px;line-height:1.25}
+.val p b{color:#3B2A12}
 .val p{margin:0;color:#4A3818;font-size:17.5px;line-height:1.55}
 .val h2,.val h3{color:#3B2A12}
 .docs{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,460px),1fr));gap:12px}
@@ -45,20 +46,20 @@ a.doc:hover{border-color:var(--ink)}
 <script type="module">
 import { iniciar, db, F, esc, esUrl } from "./app.js";
 
-const DOCS = [["normas", "Normas del curso"], ["programa", "Programa de la cátedra"], ["cronograma", "Cronograma de clases"], ["tp1", "Consigna del TP n.° 1"], ["tp2", "Consigna del TP n.° 2"], ["modelo", "Modelo de examen"]];
+const DOCS = [["normas", "Normas del curso"], ["programa", "Programa de la cátedra"], ["tp1", "Consigna del TP n.° 1"], ["tp2", "Consigna del TP n.° 2"], ["modelo", "Modelo de examen"]];
 const FAQ = [
   ["¿Qué pasa si no llego al 75 % de asistencia?", "Quedás en condición de “ausente” en la materia. Esto vale tanto para las clases presenciales como para las virtuales."],
   ["¿Puedo usar el recuperatorio para mejorar una nota?", "Sí. El recuperatorio sirve para rendir un parcial desaprobado o uno cuya nota quieras mejorar. Tené en cuenta que su nota reemplaza siempre a la del parcial, aunque sea más baja."],
-  ["¿Cómo se aprueban los trabajos prácticos?", "Son grupales y tienen dos partes: una entrega escrita y una exposición oral. Se califican como aprobados o reprobados. Si hay que recuperarlo, se corrige con los comentarios de los docentes y se vuelve a entregar en la fecha indicada."],
+  ["¿Cómo se aprueban los trabajos prácticos?", "Son grupales y tienen dos partes: una entrega escrita y una exposición oral. Se califican como aprobados o reprobados. Para aprobarlos tenemos en cuenta que se entreguen en fecha, que se relacionen con la bibliografía, el formato, la redacción y la ortografía, la profundidad del análisis y la calidad de las conclusiones. Si hay que recuperarlo, se vuelve a entregar en la fecha indicada y valoramos cuánto se tuvieron en cuenta los comentarios de los docentes."],
   ["¿Cuándo debería leer la bibliografía?", "Antes de cada clase. En el cronograma figura qué lectura corresponde a cada encuentro. Las dinámicas de clase se aprovechan mejor habiendo leído la bibliografía previamente."],
-  ["¿Qué nota necesito para promocionar?", "Con 7 o más promocionás. El promedio se redondea para arriba: si entre los dos parciales sumás 13 puntos (por ejemplo, un 6 y un 7), el 6,5 pasa a 7 y promocionás. Con 4 a 6 quedás regular y rendís un examen final. En todos los casos necesitás el 75 % de asistencia y aprobar ambos parciales."],
+  ["¿Qué nota necesito para promocionar?", "Con 7 o más promocionás. El promedio se redondea para arriba: si entre los dos parciales sumás 13 puntos, el 6,5 pasa a 7 y promocionás. Con 4 a 6 quedás regular y rendís un examen final. En todos los casos necesitás el 75 % de asistencia y aprobar ambos parciales."],
   ["¿Puedo sumar puntos por mi compromiso con la cursada?", "Además de los parciales, tenemos en cuenta cómo transitaste la cursada: la asistencia a clase, la participación en las consignas y los trabajos que se destaquen. Demostrar un rendimiento destacado sostenido durante todo el cuatrimestre puede mejorar un poco tu nota final, o permitirte aprobar en los casos que queden cerca de la promoción (12 puntos entre ambos parciales)."],
   ["¿Qué es la clase de “entrega de reconocimientos”?", "Es la última clase del cuatrimestre. Nos gusta reconocer a quienes se destacaron durante la cursada: entre todos votamos a compañeras y compañeros en distintas categorías, y los ganadores reciben un premio. Es una forma de cerrar la materia celebrando lo que aprendimos juntos."]
 ];
 const VALORES = [
-  ["I", "Aprendemos con una mirada integral.", "Incorporamos conocimientos nuevos y desarrollamos también nuestras habilidades sociales, fundamentales en nuestra profesión para generar un impacto positivo en las organizaciones."],
-  ["II", "Formamos nuestro propio criterio profesional.", "Analizamos y cuestionamos los conceptos estudiados, conectándolos con nuestras ideas y experiencias. Mantenemos una mente abierta y reflexiva para desarrollar el pensamiento crítico."],
-  ["III", "Somos las/os protagonistas de nuestro aprendizaje.", "Dejamos las distracciones de lado, escuchamos activamente y construimos un ambiente de participación e intercambio. Aportamos nuestras opiniones y nos permitimos equivocarnos."]
+  ["I", "Aprendemos con una mirada integral.", "Incorporamos <b>conocimientos nuevos</b> y desarrollamos también nuestras <b>habilidades sociales</b>, fundamentales en nuestra profesión para generar un impacto positivo en las organizaciones."],
+  ["II", "Formamos nuestro propio criterio profesional.", "Analizamos y cuestionamos los conceptos estudiados, conectándolos con nuestras ideas y experiencias. Mantenemos una mente abierta y reflexiva para desarrollar el <b>pensamiento crítico</b>."],
+  ["III", "Somos las/os protagonistas de nuestro aprendizaje.", "Dejamos las distracciones de lado, escuchamos activamente y construimos un <b>ambiente de participación e intercambio</b>. Aportamos nuestras opiniones y nos permitimos equivocarnos."]
 ];
 const CHEV = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5A5F78" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
 
@@ -68,8 +69,8 @@ iniciar({ area: "estudiantes", activo: "Información", titulo: "Información del
   <div class="top2">
     <section class="card ess"><h2 style="margin-bottom:16px">Lo esencial para aprobar</h2>
       <div class="g">
-        <div><span class="k">75 %</span><span><b>Asistencia mínima</b><p>En clases presenciales y virtuales.</p></span></div>
-        <div><span class="k">2</span><span><b>Parciales</b><p>Unidades I a IV y V a VIII. Se evalúan conceptos con preguntas de opción múltiple.</p></span></div>
+        <div><span class="k">75 %</span><span><b>Asistencia mínima</b><p>En clases (presenciales y virtuales).</p></span></div>
+        <div><span class="k">2</span><span><b>Parciales</b><p>Unidades I-IV y V-VIII. Se evalúan conceptos con preguntas de opción múltiple.</p></span></div>
         <div><span class="k">1</span><span><b>Recuperatorio</b><p>Su nota siempre reemplaza a la del parcial.</p></span></div>
         <div><span class="k">TP</span><span><b>Trabajos prácticos grupales</b><p>Entrega escrita y exposición oral.</p></span></div>
       </div>
