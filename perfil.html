@@ -86,11 +86,11 @@ iniciar({ area: "estudiantes", activo: "Perfil", titulo: "Perfil", fondo: "rosa"
 
   const B = {
     b1: { t: "Datos personales", fijo: true,
-      ver: () => `<div class="foto">${avatar()}</div>` + ver([["Apellido", P.apellido], ["Nombre", P.nombre], ["Legajo", P.legajo]]),
+      ver: () => `<div class="foto">${avatar()}</div>` + ver([["Apellido", P.apellido], ["Nombre", P.nombre], ["DNI", P.legajo]]),
       form: () => `<div class="foto">${avatar()}<label class="btn small" for="foto">Cambiar foto</label><input id="foto" type="file" accept="image/*" hidden></div>
-        <div class="fg">${inp("apellido", "Apellido *", P.apellido)}${inp("nombre", "Nombre *", P.nombre)}${inp("legajo", "Legajo *", P.legajo)}</div>`,
-      leer: () => ({ apellido: $("#apellido").value.trim(), nombre: $("#nombre").value.trim(), legajo: $("#legajo").value.trim().replace(/[^0-9A-Za-z-]/g, "") }),
-      ok: d => d.apellido && d.nombre && d.legajo ? "" : "Completá apellido, nombre y legajo." },
+        <div class="fg">${inp("apellido", "Apellido *", P.apellido)}${inp("nombre", "Nombre *", P.nombre)}${inp("legajo", "DNI *", P.legajo, "text\" inputmode=\"numeric")}</div>`,
+      leer: () => ({ apellido: $("#apellido").value.trim(), nombre: $("#nombre").value.trim(), legajo: $("#legajo").value.replace(/[^0-9]/g, "") }),
+      ok: d => d.apellido && d.nombre && d.legajo ? "" : "Completá apellido, nombre y DNI." },
     b2: { t: "Perfil académico",
       ver: () => ver([["Carrera", P.carrera], ["Materias aprobadas", P.aprobadas], ["Otras materias este cuatrimestre", P.otras], ["Por qué estudio esta carrera", P.porque]]),
       form: () => `<div class="fg">${chips("carrera", CARRERAS, "¿Qué carrera estudiás? *")}${area("porque", "¿Por qué estudiás esta carrera?", P.porque)}${inp("aprobadas", "¿Cuántas materias tenés aprobadas?", P.aprobadas, "number")}${inp("otras", "¿Qué otras materias cursás este cuatrimestre?", P.otras)}</div>`,

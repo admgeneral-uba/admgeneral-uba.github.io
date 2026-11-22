@@ -162,7 +162,7 @@ export async function montarAsistencia(host, { clases, claseId }){
     const al = new Map();
     est.docs.forEach(d => { const p = d.data().perfil || {}; al.set(d.id, { ap: p.apellido || "", no: p.nombre || d.data().nombreGoogle || "", leg: p.legajo || "", email: d.data().email || "", cl: new Set() }); });
     as.docs.forEach(d => { const r = d.data(); if(!r.uid) return; if(!al.has(r.uid)) al.set(r.uid, { ap: "", no: r.nombre, leg: "", email: r.email || "", cl: new Set() }); al.get(r.uid).cl.add(r.sesion); });
-    const filas = [["Apellido", "Nombre", "Legajo", "Email", ...ids.map(c => `Clase ${c.n} (${corta(c.fecha)})`), "Presentes", "Asistencia"]];
+    const filas = [["Apellido", "Nombre", "DNI", "Email", ...ids.map(c => `Clase ${c.n} (${corta(c.fecha)})`), "Presentes", "Asistencia"]];
     [...al.values()].sort((a, b) => (a.ap + a.no).localeCompare(b.ap + b.no, "es")).forEach(a => {
       const n = ids.filter(c => a.cl.has(c.id)).length;
       filas.push([a.ap, a.no, a.leg, a.email, ...ids.map(c => a.cl.has(c.id) ? "P" : "A"), n, Math.round(n / ids.length * 100) + " %"]);
