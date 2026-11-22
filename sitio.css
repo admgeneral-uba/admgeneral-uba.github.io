@@ -22,9 +22,9 @@ h1,h2,h3,.serif{font-family:var(--serif)}
 .small{font-size:15px}
 
 /* encabezado */
-.hero{background:#DCDFF0 url(img/fondo-lila.jpg) center/cover no-repeat}
-.hero.rosa{background-image:url(img/fondo-rosa.jpg)}
-.hero.intenso{background-color:#E9B5D0;background-image:url(img/fondo-intenso.jpg)}
+.hero{background:#DCDFF0 url(img/fondo-lila.jpg?v=2) center/cover no-repeat}
+.hero.rosa{background-image:url(img/fondo-rosa.jpg?v=2)}
+.hero.intenso{background-color:#E9B5D0;background-image:url(img/fondo-intenso.jpg?v=2)}
 .hero .in{max-width:1120px;margin:0 auto;padding:16px 24px 18px}
 .top{display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:"brand nav me";gap:14px;align-items:center}
 .brand{grid-area:brand;display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--ink);min-width:0}
